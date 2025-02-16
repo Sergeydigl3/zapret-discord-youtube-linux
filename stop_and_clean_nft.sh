@@ -19,23 +19,23 @@ stop_nfqws_processes() {
 # Очистка помеченных правил nftables
 clear_firewall_rules() {
     log "Очистка правил nftables, добавленных скриптом..."
-
+    
     # Проверка на существование таблицы и цепочки
     if sudo nft list tables | grep -q "$TABLE_NAME"; then
         if sudo nft list chain $TABLE_NAME $CHAIN_NAME >/dev/null 2>&1; then
             # Получаем все handle значений правил с меткой, добавленных скриптом
             handles=$(sudo nft -a list chain $TABLE_NAME $CHAIN_NAME | grep "$RULE_COMMENT" | awk '{print $NF}')
-
+            
             # Удаление каждого правила по handle значению
             for handle in $handles; do
                 sudo nft delete rule $TABLE_NAME $CHAIN_NAME handle $handle ||
-                    log "Не удалось удалить правило с handle $handle"
+                log "Не удалось удалить правило с handle $handle"
             done
-
+            
             # Удаление цепочки и таблицы, если они пусты
             sudo nft delete chain $TABLE_NAME $CHAIN_NAME
             sudo nft delete table $TABLE_NAME
-
+            
             log "Очистка завершена."
         else
             log "Цепочка $CHAIN_NAME не найдена в таблице $TABLE_NAME."

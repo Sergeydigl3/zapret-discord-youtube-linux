@@ -50,10 +50,10 @@ load_config() {
     if [ ! -f "$CONF_FILE" ]; then
         handle_error "Файл конфигурации $CONF_FILE не найден"
     fi
-
+    
     # Чтение переменных из конфигурационного файла
     source "$CONF_FILE"
-
+    
     # Проверка обязательных переменных
     if [ -z "$interface" ] || [ -z "$auto_update" ] || [ -z "$strategy" ]; then
         handle_error "Отсутствуют обязательные параметры в конфигурационном файле"
@@ -67,7 +67,7 @@ setup_repository() {
             log "Использование существующей версии репозитория."
             return
         fi
-
+        
         read -p "Репозиторий уже существует. Обновить его? (y/n): " choice
         if [[ "$choice" =~ ^[Yy]$ ]] || $NOINTERACTIVE && [ "$auto_update" == "true" ]; then
             log "Обновление репозитория..."
@@ -75,6 +75,7 @@ setup_repository() {
             git clone "$REPO_URL" "$REPO_DIR" || handle_error "Ошибка при клонировании репозитория"
             # rename_bat.sh
             chmod +x "$BASE_DIR/rename_bat.sh"
+            rm -rf "$REPO_DIR/.git"
             "$BASE_DIR/rename_bat.sh" || handle_error "Ошибка при переименовании файлов"
         else
             log "Использование существующей версии репозитория."
@@ -84,6 +85,7 @@ setup_repository() {
         git clone "$REPO_URL" "$REPO_DIR" || handle_error "Ошибка при клонировании репозитория"
         # rename_bat.sh
         chmod +x "$BASE_DIR/rename_bat.sh"
+        rm -rf "$REPO_DIR/.git"
         "$BASE_DIR/rename_bat.sh" || handle_error "Ошибка при переименовании файлов"
     fi
 }
@@ -97,7 +99,7 @@ find_bat_files() {
 # Функция для выбора стратегии
 select_strategy() {
     cd "$REPO_DIR" || handle_error "Не удалось перейти в директорию $REPO_DIR"
-
+    
     if $NOINTERACTIVE; then
         if [ ! -f "$strategy" ]; then
             handle_error "Указанный .bat файл стратегии $strategy не найден"
@@ -106,16 +108,16 @@ select_strategy() {
         cd ..
         return
     fi
-
+    
     # Обычный выбор стратегии для интерактивного режима
     local IFS=$'\n'
     local bat_files=($(find_bat_files "general*.bat" | xargs -0 -n1 echo) $(find_bat_files "discord.bat" | xargs -0 -n1 echo))
-
+    
     if [ ${#bat_files[@]} -eq 0 ]; then
         cd ..
         handle_error "Не найдены подходящие .bat файлы"
     fi
-
+    
     echo "Доступные стратегии:"
     select strategy in "${bat_files[@]}"; do
         if [ -n "$strategy" ]; then
@@ -125,7 +127,7 @@ select_strategy() {
         fi
         echo "Неверный выбор. Попробуйте еще раз."
     done
-
+    
     parse_bat_file "$REPO_DIR/$strategy"
 }
 
@@ -135,29 +137,29 @@ parse_bat_file() {
     local queue_num=0
     local bin_path="bin/"
     debug_log "Parsing .bat file: $file"
-
+    
     while IFS= read -r line; do
         debug_log "Processing line: $line"
-
+        
         [[ "$line" =~ ^[:space:]*:: || -z "$line" ]] && continue
-
+        
         if [[ "$line" =~ ^set[[:space:]]+BIN=%~dp0bin\\ ]]; then
             debug_log "Detected BIN definition. Replacing %BIN% with $bin_path in further processing."
             continue
         fi
-
+        
         line="${line//%BIN%/$bin_path}"
-
+        
         if [[ "$line" =~ --filter-(tcp|udp)=([0-9,-]+)[[:space:]](.*?)(--new|$) ]]; then
             local protocol="${BASH_REMATCH[1]}"
             local ports="${BASH_REMATCH[2]}"
             local nfqws_args="${BASH_REMATCH[3]}"
-
+            
             nft_rules+=("$protocol dport {$ports} counter queue num $queue_num bypass")
             nfqws_params+=("$nfqws_args")
             debug_log "Matched protocol: $protocol, ports: $ports, queue: $queue_num"
             debug_log "NFQWS parameters for queue $queue_num: $nfqws_args"
-
+            
             ((queue_num++))
         fi
     done < <(grep -v "^@echo" "$file" | grep -v "^chcp" | tr -d '\r')
@@ -169,24 +171,24 @@ setup_nftables() {
     local table_name="inet zapretunix"
     local chain_name="output"
     local rule_comment="Added by zapret script"
-
+    
     log "Настройка nftables с очисткой только помеченных правил..."
-
+    
     # Удаляем существующую таблицу, если она была создана этим скриптом
     if sudo nft list tables | grep -q "$table_name"; then
         sudo nft flush chain $table_name $chain_name
         sudo nft delete chain $table_name $chain_name
         sudo nft delete table $table_name
     fi
-
+    
     # Добавляем таблицу и цепочку
     sudo nft add table $table_name
     sudo nft add chain $table_name $chain_name { type filter hook output priority 0\; }
-
+    
     # Добавляем правила с пометкой
     for queue_num in "${!nft_rules[@]}"; do
         sudo nft add rule $table_name $chain_name oifname \"$interface\" ${nft_rules[$queue_num]} comment \"$rule_comment\" ||
-            handle_error "Ошибка при добавлении правила nftables для очереди $queue_num"
+        handle_error "Ошибка при добавлении правила nftables для очереди $queue_num"
     done
 }
 
@@ -198,7 +200,7 @@ start_nfqws() {
     for queue_num in "${!nfqws_params[@]}"; do
         debug_log "Запуск nfqws с параметрами: $NFQWS_PATH --daemon --qnum=$queue_num ${nfqws_params[$queue_num]}"
         eval "sudo $NFQWS_PATH --daemon --qnum=$queue_num ${nfqws_params[$queue_num]}" ||
-            handle_error "Ошибка при запуске nfqws для очереди $queue_num"
+        handle_error "Ошибка при запуске nfqws для очереди $queue_num"
     done
 }
 
@@ -207,15 +209,15 @@ main() {
     if [[ "$1" == "-debug" ]]; then
         DEBUG=true
         shift
-    elif [[ "$1" == "-nointeractive" ]]; then
+        elif [[ "$1" == "-nointeractive" ]]; then
         NOINTERACTIVE=true
         shift
         load_config
     fi
-
+    
     check_dependencies
     setup_repository
-
+    
     if $NOINTERACTIVE; then
         select_strategy
         setup_nftables "$interface"

@@ -8,22 +8,73 @@ MAIN_SCRIPT_PATH="$(dirname "$0")/main_script.sh"   # Путь к основно
 CONF_FILE="$(dirname "$0")/conf.env"                # Путь к файлу конфигурации
 STOP_SCRIPT="$(dirname "$0")/stop_and_clean_nft.sh" # Путь к скрипту остановки и очистки nftables
 
-# Функция для проверки существования conf.env и необходимых полей
+# Функция для проверки существования conf.env и обязательных непустых полей
 check_conf_file() {
     if [[ ! -f "$CONF_FILE" ]]; then
-        echo "Ошибка: Файл конфигурации conf.env не найден."
         return 1
     fi
-
-    # Проверяем наличие необходимых полей
+    
     local required_fields=("interface" "auto_update" "strategy")
     for field in "${required_fields[@]}"; do
-        if ! grep -q "^${field}=" "$CONF_FILE"; then
-            echo "Ошибка: Поле ${field} отсутствует в conf.env."
+        # Ищем строку вида field=Значение, где значение не пустое
+        if ! grep -q "^${field}=[^[:space:]]" "$CONF_FILE"; then
             return 1
         fi
     done
     return 0
+}
+
+# Функция для интерактивного создания файла конфигурации conf.env
+create_conf_file() {
+    echo "Конфигурация отсутствует или неполная. Создаем новый конфиг."
+    
+    # 1. Выбор интерфейса
+    local interfaces=($(ls /sys/class/net))
+    echo "Доступные сетевые интерфейсы:"
+    local i=1
+    for iface in "${interfaces[@]}"; do
+        echo "  $i) $iface"
+        ((i++))
+    done
+    read -p "Выберите номер интерфейса: " iface_choice
+    local chosen_interface="${interfaces[$((iface_choice-1))]}"
+    
+    # 2. Авто-обновление
+    read -p "Включить авто-обновление? (true/false) [false]: " auto_update_choice
+    if [[ "$auto_update_choice" != "true" ]]; then
+        auto_update_choice="false"
+    fi
+    
+    # 3. Выбор стратегии
+    local strategy_choice=""
+    local repo_dir="$HOME_DIR_PATH/zapret-latest"
+    if [[ -d "$repo_dir" ]]; then
+        # Ищем .bat файлы, содержащие "general" или "discord", в папке репозитория (только в корне)
+        mapfile -t bat_files < <(find "$repo_dir" -maxdepth 1 -type f -name "*general*.bat" -o -name "*discord*.bat")
+        if [ ${#bat_files[@]} -gt 0 ]; then
+            echo "Доступные стратегии (файлы .bat):"
+            i=1
+            for bat in "${bat_files[@]}"; do
+                echo "  $i) $(basename "$bat")"
+                ((i++))
+            done
+            read -p "Выберите номер стратегии: " bat_choice
+            strategy_choice="$(basename "${bat_files[$((bat_choice-1))]}")"
+        else
+            read -p "Файлы .bat с 'general' или 'discord' не найдены. Введите название стратегии вручную: " strategy_choice
+        fi
+    else
+        read -p "Папка репозитория не найдена. Введите название стратегии вручную: " strategy_choice
+    fi
+    
+    
+    # Записываем полученные значения в conf.env
+    cat <<EOF > "$CONF_FILE"
+interface=$chosen_interface
+auto_update=$auto_update_choice
+strategy=$strategy_choice
+EOF
+    echo "Конфигурация записана в $CONF_FILE."
 }
 
 # Функция для проверки статуса процесса nfqws
@@ -41,7 +92,7 @@ check_service_status() {
         echo "Статус: Сервис не установлен."
         return 1
     fi
-
+    
     if systemctl is-active --quiet "$SERVICE_NAME"; then
         echo "Статус: Сервис установлен и активен."
         return 2
@@ -53,26 +104,41 @@ check_service_status() {
 
 # Функция для установки сервиса
 install_service() {
-    # Проверяем файл конфигурации
+    # Если конфиг отсутствует или неполный — создаём его интерактивно
     if ! check_conf_file; then
-        echo "Установка прервана из-за ошибки в conf.env."
-        return
+        read -p "Конфигурация отсутствует или неполная. Создать конфигурацию сейчас? (y/n): " answer
+        if [[ $answer =~ ^[Yy]$ ]]; then
+            create_conf_file
+        else
+            echo "Установка отменена."
+            return
+        fi
+        # Перепроверяем конфигурацию
+        if ! check_conf_file; then
+            echo "Файл конфигурации все еще некорректен. Установка отменена."
+            return
+        fi
     fi
-
-    # Получение абсолютного пути к основному и скрипту остановки
-    local absolute_homedir_path="$(realpath "$HOME_DIR_PATH")"
-    local absolute_main_script_path="$(realpath "$MAIN_SCRIPT_PATH")"
-    local absolute_stop_script_path="$(realpath "$STOP_SCRIPT")"
-
+    
+    # Получение абсолютного пути к основному скрипту и скрипту остановки
+    local absolute_homedir_path
+    absolute_homedir_path="$(realpath "$HOME_DIR_PATH")"
+    local absolute_main_script_path
+    absolute_main_script_path="$(realpath "$MAIN_SCRIPT_PATH")"
+    local absolute_stop_script_path
+    absolute_stop_script_path="$(realpath "$STOP_SCRIPT")"
+    
     echo "Создание systemd сервиса для автозагрузки..."
     sudo bash -c "cat > $SERVICE_FILE" <<EOF
 [Unit]
 Description=Custom Script Service
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 WorkingDirectory=$absolute_homedir_path
+ExecStartPre=/bin/sleep 10
 ExecStart=sudo /bin/bash $absolute_main_script_path -nointeractive >> /var/log/$SERVICE_NAME.log 2>&1
 ExecStop=sudo /bin/bash $absolute_stop_script_path
 ExecStopPost=/bin/echo "Сервис завершён"
@@ -119,35 +185,35 @@ stop_service() {
 show_menu() {
     check_service_status
     local status=$?
-
+    
     case $status in
-    1)
-        echo "1. Установить и запустить сервис"
-        read -p "Выберите действие: " choice
-        if [ "$choice" -eq 1 ]; then
-            install_service
-        fi
+        1)
+            echo "1. Установить и запустить сервис"
+            read -p "Выберите действие: " choice
+            if [ "$choice" -eq 1 ]; then
+                install_service
+            fi
         ;;
-    2)
-        echo "1. Удалить сервис"
-        echo "2. Остановить сервис"
-        read -p "Выберите действие: " choice
-        case $choice in
-        1) remove_service ;;
-        2) stop_service ;;
-        esac
+        2)
+            echo "1. Удалить сервис"
+            echo "2. Остановить сервис"
+            read -p "Выберите действие: " choice
+            case $choice in
+                1) remove_service ;;
+                2) stop_service ;;
+            esac
         ;;
-    3)
-        echo "1. Удалить сервис"
-        echo "2. Запустить сервис"
-        read -p "Выберите действие: " choice
-        case $choice in
-        1) remove_service ;;
-        2) start_service ;;
-        esac
+        3)
+            echo "1. Удалить сервис"
+            echo "2. Запустить сервис"
+            read -p "Выберите действие: " choice
+            case $choice in
+                1) remove_service ;;
+                2) start_service ;;
+            esac
         ;;
-    *)
-        echo "Неправильный выбор."
+        *)
+            echo "Неправильный выбор."
         ;;
     esac
 }
