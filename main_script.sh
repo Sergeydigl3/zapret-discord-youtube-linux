@@ -63,33 +63,56 @@ load_config() {
 
 # Функция для настройки репозитория
 setup_repository() {
+    compact_file_list() {
+        (cd "$REPO_DIR" && find . -type f | while read -r file; do
+            [ -f "$file" ] || continue
+            statout=$(stat -c '%Y %s %n' "$file")
+            epoch=$(echo "$statout" | awk '{print $1}')
+            size=$(echo "$statout" | awk '{print $2}')
+            fname=$(echo "$statout" | cut -d' ' -f3-)
+            date=$(date -d @$epoch +'%d-%m-%Y')
+            hsize=$(numfmt --to=iec --suffix=B "$size")
+            echo "$date $hsize ${fname#./}"
+        done | sort -k3)
+    }
     if [ -d "$REPO_DIR" ]; then
         if $NOINTERACTIVE && [ "$auto_update" != "true" ]; then
             log "Использование существующей версии репозитория."
+            echo
+            log "Файлы в $REPO_DIR (по времени, компактно):"
+            compact_file_list
+            echo
             return
         fi
-        
         read -p "Репозиторий уже существует. Обновить его? (y/n): " choice
         if [[ "$choice" =~ ^[Yy]$ ]] || $NOINTERACTIVE && [ "$auto_update" == "true" ]; then
             log "Обновление репозитория..."
             rm -rf "$REPO_DIR"
             git clone "$REPO_URL" "$REPO_DIR" || handle_error "Ошибка при клонировании репозитория"
-            cd "$REPO_DIR" && git checkout dcdb0a3dce0675e3ac8d226a238865e060f8c6be && cd ..
-            # rename_bat.sh
             chmod +x "$BASE_DIR/rename_bat.sh"
             rm -rf "$REPO_DIR/.git"
             "$BASE_DIR/rename_bat.sh" || handle_error "Ошибка при переименовании файлов"
+            echo
+            log "Файлы в $REPO_DIR после обновления (по времени, компактно):"
+            compact_file_list
+            echo
         else
             log "Использование существующей версии репозитория."
+            echo
+            log "Файлы в $REPO_DIR (по времени, компактно):"
+            compact_file_list
+            echo
         fi
     else
         log "Клонирование репозитория..."
         git clone "$REPO_URL" "$REPO_DIR" || handle_error "Ошибка при клонировании репозитория"
-        cd "$REPO_DIR" && git checkout dcdb0a3dce0675e3ac8d226a238865e060f8c6be && cd ..
-        # rename_bat.sh
         chmod +x "$BASE_DIR/rename_bat.sh"
         rm -rf "$REPO_DIR/.git"
         "$BASE_DIR/rename_bat.sh" || handle_error "Ошибка при переименовании файлов"
+        echo
+        log "Файлы в $REPO_DIR после клонирования (по времени, компактно):"
+        compact_file_list
+        echo
     fi
 }
 
