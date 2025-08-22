@@ -181,6 +181,13 @@ stop_service() {
     $STOP_SCRIPT
 }
 
+# Функция для перезапуска сервиса
+restart_service() {
+    stop_service
+    sleep 1
+    start_service
+}
+
 # Основное меню управления
 show_menu() {
     check_service_status
@@ -197,10 +204,12 @@ show_menu() {
         2)
             echo "1. Удалить сервис"
             echo "2. Остановить сервис"
+            echo "3. Перезапустить сервис"
             read -p "Выберите действие: " choice
             case $choice in
                 1) remove_service ;;
                 2) stop_service ;;
+                3) restart_service ;;
             esac
         ;;
         3)
