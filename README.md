@@ -18,6 +18,7 @@
 **Проверено на:**  
 - Ubuntu 24.04
 - Arch Linux
+- OpenSUSE Tumbleweed
 
 ---
 
