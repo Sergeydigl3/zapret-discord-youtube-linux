@@ -74,7 +74,7 @@ setup_repository() {
             log "Обновление репозитория..."
             rm -rf "$REPO_DIR"
             git clone "$REPO_URL" "$REPO_DIR" || handle_error "Ошибка при клонировании репозитория"
-            cd "$REPO_DIR" && git checkout dcdb0a3dce0675e3ac8d226a238865e060f8c6be && cd ..
+            cd "$REPO_DIR" && git checkout a609396772dfe2a3c85b0cec8c314ff9ac96a5c0 && cd ..
             # rename_bat.sh
             chmod +x "$BASE_DIR/rename_bat.sh"
             rm -rf "$REPO_DIR/.git"
@@ -85,7 +85,7 @@ setup_repository() {
     else
         log "Клонирование репозитория..."
         git clone "$REPO_URL" "$REPO_DIR" || handle_error "Ошибка при клонировании репозитория"
-        cd "$REPO_DIR" && git checkout dcdb0a3dce0675e3ac8d226a238865e060f8c6be && cd ..
+        cd "$REPO_DIR" && git checkout a609396772dfe2a3c85b0cec8c314ff9ac96a5c0 && cd ..
         # rename_bat.sh
         chmod +x "$BASE_DIR/rename_bat.sh"
         rm -rf "$REPO_DIR/.git"
@@ -146,12 +146,8 @@ parse_bat_file() {
         
         [[ "$line" =~ ^[:space:]*:: || -z "$line" ]] && continue
         
-        if [[ "$line" =~ ^set[[:space:]]+BIN=%~dp0bin\\ ]]; then
-            debug_log "Detected BIN definition. Replacing %BIN% with $bin_path in further processing."
-            continue
-        fi
-        
         line="${line//%BIN%/$bin_path}"
+        line="${line//%GameFilter/}"
         
         if [[ "$line" =~ --filter-(tcp|udp)=([0-9,-]+)[[:space:]](.*?)(--new|$) ]]; then
             local protocol="${BASH_REMATCH[1]}"
