@@ -29,21 +29,25 @@ create_conf_file() {
     echo "Конфигурация отсутствует или неполная. Создаем новый конфиг."
     
     # 1. Выбор интерфейса
-    local interfaces=($(ls /sys/class/net))
-    echo "Доступные сетевые интерфейсы:"
-    local i=1
-    for iface in "${interfaces[@]}"; do
-        echo "  $i) $iface"
-        ((i++))
-    done
-    read -p "Выберите номер интерфейса: " iface_choice
-    local chosen_interface="${interfaces[$((iface_choice-1))]}"
+    local interfaces=("any" $(ls /sys/class/net))
+        if [ ${#interfaces[@]} -eq 0 ]; then
+            handle_error "Не найдены сетевые интерфейсы"
+        fi
+        echo "Доступные сетевые интерфейсы:"
+        select chosen_interface in "${interfaces[@]}"; do
+            if [ -n "$chosen_interface" ]; then
+                echo "Выбран интерфейс: $chosen_interface"
+                break
+            fi
+            echo "Неверный выбор. Попробуйте еще раз."
+        done
     
     # 2. Авто-обновление
-    read -p "Включить авто-обновление? (true/false) [false]: " auto_update_choice
-    if [[ "$auto_update_choice" != "true" ]]; then
-        auto_update_choice="false"
-    fi
+    # read -p "Включить авто-обновление? (true/false) [false]: " auto_update_choice
+    # if [[ "$auto_update_choice" != "true" ]]; then
+    #     auto_update_choice="false"
+    # fi
+    auto_update_choice="false"
     
     # 3. Выбор стратегии
     local strategy_choice=""

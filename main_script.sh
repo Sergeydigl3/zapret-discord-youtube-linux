@@ -187,9 +187,14 @@ setup_nftables() {
     sudo nft add table $table_name
     sudo nft add chain $table_name $chain_name { type filter hook output priority 0\; }
     
+    local oif_clause=""
+    if [ -n "$interface" ] && [ "$interface" != "any" ]; then
+        oif_clause="oifname \"$interface\""
+    fi
+
     # Добавляем правила с пометкой
     for queue_num in "${!nft_rules[@]}"; do
-        sudo nft add rule $table_name $chain_name oifname \"$interface\" ${nft_rules[$queue_num]} comment \"$rule_comment\" ||
+        sudo nft add rule $table_name $chain_name $oif_clause ${nft_rules[$queue_num]} comment \"$rule_comment\" ||
         handle_error "Ошибка при добавлении правила nftables для очереди $queue_num"
     done
 }
@@ -225,7 +230,7 @@ main() {
         setup_nftables "$interface"
     else
         select_strategy
-        local interfaces=($(ls /sys/class/net))
+        local interfaces=("any" $(ls /sys/class/net))
         if [ ${#interfaces[@]} -eq 0 ]; then
             handle_error "Не найдены сетевые интерфейсы"
         fi
