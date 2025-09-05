@@ -1,0 +1,26 @@
+name: ⬆️ Запрос на подтягивание новых стратегий
+description: "Если хотите, чтобы новые стратегии из upstream Flowseal были интегрированы."
+title: "[UPSTREAM] "
+labels: ["upstream", "feature request"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      content: |
+        Этот issue предназначен для запросов на интеграцию новых стратегий из upstream Flowseal.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: "Проверено перед созданием запроса"
+      options:
+        - label: "Я не прошу исправить баги в текущем скрипте этим issue"
+          required: true
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: "Комментарий"
+      placeholder: "Например, нужна для обхода новых ограничений на YouTube"
+      required: false
