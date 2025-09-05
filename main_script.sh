@@ -213,14 +213,22 @@ start_nfqws() {
 
 # Основная функция
 main() {
-    if [[ "$1" == "-debug" ]]; then
-        DEBUG=true
-        shift
-        elif [[ "$1" == "-nointeractive" ]]; then
-        NOINTERACTIVE=true
-        shift
-        load_config
-    fi
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -debug)
+                DEBUG=true
+                shift
+                ;;
+            -nointeractive)
+                NOINTERACTIVE=true
+                shift
+                load_config
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
     
     check_dependencies
     setup_repository
