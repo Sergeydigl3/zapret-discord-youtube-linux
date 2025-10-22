@@ -81,6 +81,20 @@ EOF
     echo "Конфигурация записана в $CONF_FILE."
 }
 
+edit_conf_file() {
+  echo "Изменение конфигурации..."
+  create_conf_file
+  echo "Конфигурация обновлена."
+
+  # Если сервис активен, предлагаем перезапустить
+  if systemctl is-active --quiet "$SERVICE_NAME"; then
+    read -p "Сервис активен. Перезапустить сервис для применения новых настроек? (Y/n): " answer
+    if [[ ${answer:-Y} =~ ^[Yy]$ ]]; then
+      restart_service
+    fi
+  fi
+}
+
 # Функция для проверки статуса процесса nfqws
 check_nfqws_status() {
     if pgrep -f "nfqws" >/dev/null; then
@@ -194,41 +208,47 @@ restart_service() {
 
 # Основное меню управления
 show_menu() {
-    check_service_status
-    local status=$?
-    
-    case $status in
-        1)
-            echo "1. Установить и запустить сервис"
-            read -p "Выберите действие: " choice
-            if [ "$choice" -eq 1 ]; then
-                install_service
-            fi
-        ;;
-        2)
-            echo "1. Удалить сервис"
-            echo "2. Остановить сервис"
-            echo "3. Перезапустить сервис"
-            read -p "Выберите действие: " choice
-            case $choice in
-                1) remove_service ;;
-                2) stop_service ;;
-                3) restart_service ;;
-            esac
-        ;;
-        3)
-            echo "1. Удалить сервис"
-            echo "2. Запустить сервис"
-            read -p "Выберите действие: " choice
-            case $choice in
-                1) remove_service ;;
-                2) start_service ;;
-            esac
-        ;;
-        *)
-            echo "Неправильный выбор."
-        ;;
+  check_service_status
+  local status=$?
+
+  case $status in
+  1)
+    echo "1. Установить и запустить сервис"
+    echo "2. Изменить конфигурацию"
+    read -p "Выберите действие: " choice
+    case $choice in
+    1) install_service ;;
+    2) edit_conf_file ;;
     esac
+    ;;
+  2)
+    echo "1. Удалить сервис"
+    echo "2. Остановить сервис"
+    echo "3. Перезапустить сервис"
+    echo "4. Изменить конфигурацию"
+    read -p "Выберите действие: " choice
+    case $choice in
+    1) remove_service ;;
+    2) stop_service ;;
+    3) restart_service ;;
+    4) edit_conf_file ;;
+    esac
+    ;;
+  3)
+    echo "1. Удалить сервис"
+    echo "2. Запустить сервис"
+    echo "3. Изменить конфигурацию"
+    read -p "Выберите действие: " choice
+    case $choice in
+    1) remove_service ;;
+    2) start_service ;;
+    3) edit_conf_file ;;
+    esac
+    ;;
+  *)
+    echo "Неправильный выбор."
+    ;;
+  esac
 }
 
 # Запуск меню
