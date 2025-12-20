@@ -49,8 +49,14 @@ create_conf_file() {
     #     auto_update_choice="false"
     # fi
     auto_update_choice="false"
+
+    # 3. Gamefilter
+    read -p "Включить Gamefilter? (Y/n) [n]: " auto_update_choice
+    if [[ "$gamefilter_choice" != "true" ]]; then
+        gamefilter_choice="false"
+    fi
     
-    # 3. Выбор стратегии
+    # 4. Выбор стратегии
     local strategy_choice=""
     local repo_dir="$HOME_DIR_PATH/zapret-latest"
     
@@ -92,6 +98,7 @@ create_conf_file() {
     cat <<EOF > "$CONF_FILE"
 interface=$chosen_interface
 auto_update=$auto_update_choice
+gamefilter=$gamefilter_choice
 strategy=$strategy_choice
 EOF
     echo "Конфигурация записана в $CONF_FILE."

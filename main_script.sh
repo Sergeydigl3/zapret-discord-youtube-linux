@@ -13,6 +13,9 @@ STOP_SCRIPT="$BASE_DIR/stop_and_clean_nft.sh"
 DEBUG=false
 NOINTERACTIVE=false
 
+# GameFilter
+GAME_FILTER_PORTS="1024-65535"
+USE_GAME_FILTER=false
 
 _term() {
     sudo /usr/bin/env bash $STOP_SCRIPT
@@ -57,7 +60,7 @@ load_config() {
     source "$CONF_FILE"
     
     # Проверка обязательных переменных
-    if [ -z "$interface" ] || [ -z "$auto_update" ] || [ -z "$strategy" ]; then
+    if [ -z "$interface" ] || [ -z "$auto_update" ] || [ -z "$gamefilter" ] || [ -z "$strategy" ]; then
         handle_error "Отсутствуют обязательные параметры в конфигурационном файле"
     fi
 }
@@ -132,6 +135,28 @@ select_strategy() {
         handle_error "Не найдены подходящие .bat файлы"
     fi
     
+    # Включение GameFilter
+    if $NOINTERACTIVE; then
+        if [ "$gamefilter" == "true" ]; then
+            USE_GAME_FILTER=true
+            log "GameFilter включен"
+        else
+            USE_GAME_FILTER=false
+            log "GameFilter выключен"
+        fi
+    else
+        echo ""
+        echo -e "Включить GameFilter? [y/N]:"
+        read -r enable_gamefilter
+        if [[ "$enable_gamefilter" =~ ^[Yy1] ]]; then
+            USE_GAME_FILTER=true
+            log "GameFilter включен"
+        else
+            USE_GAME_FILTER=false
+            log "GameFilter выключен"
+        fi
+    fi
+
     echo "Доступные стратегии:"
     select strategy in "${bat_files[@]}"; do
         if [ -n "$strategy" ]; then
@@ -159,14 +184,24 @@ parse_bat_file() {
     local queue_num=0
     local bin_path="bin/"
     debug_log "Parsing .bat file: $file"
-    
+
     while IFS= read -r line; do
         debug_log "Processing line: $line"
         
         [[ "$line" =~ ^[:space:]*:: || -z "$line" ]] && continue
         
         line="${line//%BIN%/$bin_path}"
-        line="${line//%GameFilter/}"
+        line="${line//%LISTS%/lists/}"
+
+        # Обрабатываем GameFilter
+        if [ "$USE_GAME_FILTER" = true ]; then
+            # Заменяем %GameFilter% на порты
+            line="${line//%GameFilter%/$GAME_FILTER_PORTS}"
+        else
+            # Удаляем GameFilter из списков портов
+            line="${line//,%GameFilter%/}"
+            line="${line//%GameFilter%,/}"
+        fi
         
         if [[ "$line" =~ --filter-(tcp|udp)=([0-9,-]+)[[:space:]](.*?)(--new|$) ]]; then
             local protocol="${BASH_REMATCH[1]}"
