@@ -7,6 +7,7 @@ HOME_DIR_PATH="$(dirname "$0")"
 MAIN_SCRIPT_PATH="$(dirname "$0")/main_script.sh"   # Путь к основному скрипту
 CONF_FILE="$(dirname "$0")/conf.env"                # Путь к файлу конфигурации
 STOP_SCRIPT="$(dirname "$0")/stop_and_clean_nft.sh" # Путь к скрипту остановки и очистки nftables
+CUSTOM_STRATEGIES_DIR="$HOME_DIR_PATH/custom-strategies"
 
 # Функция для проверки существования conf.env и обязательных непустых полей
 check_conf_file() {
@@ -52,23 +53,38 @@ create_conf_file() {
     # 3. Выбор стратегии
     local strategy_choice=""
     local repo_dir="$HOME_DIR_PATH/zapret-latest"
-    if [[ -d "$repo_dir" ]]; then
-        # Ищем .bat файлы, содержащие "general" или "discord", в папке репозитория (только в корне)
-        mapfile -t bat_files < <(find "$repo_dir" -maxdepth 1 -type f -name "*general*.bat" -o -name "*discord*.bat")
-        if [ ${#bat_files[@]} -gt 0 ]; then
-            echo "Доступные стратегии (файлы .bat):"
-            i=1
-            for bat in "${bat_files[@]}"; do
-                echo "  $i) $(basename "$bat")"
-                ((i++))
-            done
-            read -p "Выберите номер стратегии: " bat_choice
-            strategy_choice="$(basename "${bat_files[$((bat_choice-1))]}")"
+    
+    
+    # Собираем стратегии из репозитория и кастомной папки
+    mapfile -t bat_files < <(find "$repo_dir" -maxdepth 1 -type f \( -name "*general*.bat" -o -name "*discord*.bat" \) 2>/dev/null)
+    mapfile -t custom_bat_files < <(find "$CUSTOM_STRATEGIES_DIR" -maxdepth 1 -type f -name "*.bat" 2>/dev/null)
+    
+    if [ ${#bat_files[@]} -gt 0 ] || [ ${#custom_bat_files[@]} -gt 0 ]; then
+        echo "Доступные стратегии (файлы .bat):"
+        i=1
+        
+        # Показываем кастомные стратегии
+        for bat in "${custom_bat_files[@]}"; do
+            echo "  $i) $(basename "$bat") (кастомная)"
+            ((i++))
+        done
+        
+        # Показываем стратегии из репозитория
+        for bat in "${bat_files[@]}"; do
+            echo "  $i) $(basename "$bat")"
+            ((i++))
+        done
+        
+        read -p "Выберите номер стратегии: " bat_choice
+        
+        # Определяем выбранную стратегию
+        if [ "$bat_choice" -le "${#custom_bat_files[@]}" ]; then
+            strategy_choice="$(basename "${custom_bat_files[$((bat_choice-1))]}")"
         else
-            read -p "Файлы .bat с 'general' или 'discord' не найдены. Введите название стратегии вручную: " strategy_choice
+            strategy_choice="$(basename "${bat_files[$((bat_choice-1-${#custom_bat_files[@]}))]}")"
         fi
     else
-        read -p "Папка репозитория не найдена. Введите название стратегии вручную: " strategy_choice
+        read -p "Файлы .bat не найдены. Введите название стратегии вручную: " strategy_choice
     fi
     
     
@@ -253,3 +269,7 @@ show_menu() {
 
 # Запуск меню
 show_menu
+
+# Пауза перед выходом
+echo ""
+read -p "Нажмите Enter для выхода..."

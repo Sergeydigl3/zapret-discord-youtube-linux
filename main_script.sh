@@ -3,6 +3,7 @@
 # Константы
 BASE_DIR="$(realpath "$(dirname "$0")")"
 REPO_DIR="$BASE_DIR/zapret-latest"
+CUSTOM_DIR="./custom-strategies"
 REPO_URL="https://github.com/Flowseal/zapret-discord-youtube"
 NFQWS_PATH="$BASE_DIR/nfqws"
 CONF_FILE="$BASE_DIR/conf.env"
@@ -101,20 +102,30 @@ find_bat_files() {
 
 # Функция для выбора стратегии
 select_strategy() {
+    # Сначала собираем кастомные файлы
+    local custom_files=()
+    if [ -d "$CUSTOM_DIR" ]; then
+        cd "$CUSTOM_DIR" && custom_files=($(ls *.bat 2>/dev/null)) && cd ..
+    fi
+
     cd "$REPO_DIR" || handle_error "Не удалось перейти в директорию $REPO_DIR"
     
     if $NOINTERACTIVE; then
-        if [ ! -f "$strategy" ]; then
+        if [ ! -f "$strategy" ] && [ ! -f "../$CUSTOM_DIR/$strategy" ]; then
             handle_error "Указанный .bat файл стратегии $strategy не найден"
         fi
-        parse_bat_file "$strategy"
+        # Проверяем, где лежит файл, чтобы распарсить
+        [ -f "$strategy" ] && parse_bat_file "$strategy" || parse_bat_file "../$CUSTOM_DIR/$strategy"
         cd ..
         return
     fi
     
-    # Обычный выбор стратегии для интерактивного режима
+    # Собираем стандартные файлы
     local IFS=$'\n'
-    local bat_files=($(find_bat_files "general*.bat" | xargs -0 -n1 echo) $(find_bat_files "discord.bat" | xargs -0 -n1 echo))
+    local repo_files=($(find_bat_files "general*.bat" | xargs -0 -n1 echo) $(find_bat_files "discord.bat" | xargs -0 -n1 echo))
+    
+    # Объединяем списки (кастомные будут первыми)
+    local bat_files=("${custom_files[@]}" "${repo_files[@]}")
     
     if [ ${#bat_files[@]} -eq 0 ]; then
         cd ..
@@ -125,13 +136,21 @@ select_strategy() {
     select strategy in "${bat_files[@]}"; do
         if [ -n "$strategy" ]; then
             log "Выбрана стратегия: $strategy"
+            
+            # Определяем полный путь для парсера перед выходом из папки
+            local final_path=""
+            if [ -f "$strategy" ]; then
+                final_path="$REPO_DIR/$strategy"
+            else
+                final_path="$REPO_DIR/../$CUSTOM_DIR/$strategy"
+            fi
+            
             cd ..
+            parse_bat_file "$final_path"
             break
         fi
         echo "Неверный выбор. Попробуйте еще раз."
     done
-    
-    parse_bat_file "$REPO_DIR/$strategy"
 }
 
 # Функция парсинга параметров из bat файла
@@ -254,6 +273,12 @@ main() {
     fi
     start_nfqws
     log "Настройка успешно завершена"
+    
+    # Пауза перед выходом
+    if ! $NOINTERACTIVE; then
+        echo ""
+        read -p "Нажмите Enter для завершения..."
+    fi
 }
 
 # Запуск скрипта
