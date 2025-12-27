@@ -273,6 +273,12 @@ main() {
     fi
     start_nfqws
     log "Настройка успешно завершена"
+    
+    # Пауза перед выходом
+    if ! $NOINTERACTIVE; then
+        echo ""
+        read -p "Нажмите Enter для завершения..."
+    fi
 }
 
 # Запуск скрипта
