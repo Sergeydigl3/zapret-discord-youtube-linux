@@ -175,6 +175,7 @@ parse_bat_file() {
             
             # Replace %LISTS% with 'lists/' in nfqws_args
             nfqws_args="${nfqws_args//%LISTS%/lists/}"
+            nfqws_args="${nfqws_args//=^!/=!}"
             
             nft_rules+=("$protocol dport {$ports} counter queue num $queue_num bypass")
             nfqws_params+=("$nfqws_args")
