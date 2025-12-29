@@ -8,6 +8,7 @@ REPO_URL="https://github.com/Flowseal/zapret-discord-youtube"
 NFQWS_PATH="$BASE_DIR/nfqws"
 CONF_FILE="$BASE_DIR/conf.env"
 STOP_SCRIPT="$BASE_DIR/stop_and_clean_nft.sh"
+MAIN_REPO_REV="8a1885d7d06a098989c450bb851a9508d977725d"
 
 # Флаг отладки
 DEBUG=false
@@ -60,7 +61,7 @@ load_config() {
     source "$CONF_FILE"
     
     # Проверка обязательных переменных
-    if [ -z "$interface" ] || [ -z "$auto_update" ] || [ -z "$gamefilter" ] || [ -z "$strategy" ]; then
+    if [ -z "$interface" ] || [ -z "$gamefilter" ] || [ -z "$strategy" ]; then
         handle_error "Отсутствуют обязательные параметры в конфигурационном файле"
     fi
 }
@@ -68,28 +69,12 @@ load_config() {
 # Функция для настройки репозитория
 setup_repository() {
     if [ -d "$REPO_DIR" ]; then
-        if $NOINTERACTIVE && [ "$auto_update" != "true" ]; then
-            log "Использование существующей версии репозитория."
-            return
-        fi
-        
-        read -p "Репозиторий уже существует. Обновить его? (y/n): " choice
-        if [[ "$choice" =~ ^[Yy]$ ]] || $NOINTERACTIVE && [ "$auto_update" == "true" ]; then
-            log "Обновление репозитория..."
-            rm -rf "$REPO_DIR"
-            git clone "$REPO_URL" "$REPO_DIR" || handle_error "Ошибка при клонировании репозитория"
-            cd "$REPO_DIR" && git checkout 8a1885d7d06a098989c450bb851a9508d977725d && cd ..
-            # rename_bat.sh
-            chmod +x "$BASE_DIR/rename_bat.sh"
-            rm -rf "$REPO_DIR/.git"
-            "$BASE_DIR/rename_bat.sh" || handle_error "Ошибка при переименовании файлов"
-        else
-            log "Использование существующей версии репозитория."
-        fi
+        log "Использование существующей версии репозитория."
+        return
     else
         log "Клонирование репозитория..."
         git clone "$REPO_URL" "$REPO_DIR" || handle_error "Ошибка при клонировании репозитория"
-        cd "$REPO_DIR" && git checkout 8a1885d7d06a098989c450bb851a9508d977725d && cd ..
+        cd "$REPO_DIR" && git checkout $MAIN_REPO_REV && cd ..
         # rename_bat.sh
         chmod +x "$BASE_DIR/rename_bat.sh"
         rm -rf "$REPO_DIR/.git"
@@ -133,28 +118,6 @@ select_strategy() {
     if [ ${#bat_files[@]} -eq 0 ]; then
         cd ..
         handle_error "Не найдены подходящие .bat файлы"
-    fi
-    
-    # Включение GameFilter
-    if $NOINTERACTIVE; then
-        if [ "$gamefilter" == "true" ]; then
-            USE_GAME_FILTER=true
-            log "GameFilter включен"
-        else
-            USE_GAME_FILTER=false
-            log "GameFilter выключен"
-        fi
-    else
-        echo ""
-        echo -e "Включить GameFilter? [y/N]:"
-        read -r enable_gamefilter
-        if [[ "$enable_gamefilter" =~ ^[Yy1] ]]; then
-            USE_GAME_FILTER=true
-            log "GameFilter включен"
-        else
-            USE_GAME_FILTER=false
-            log "GameFilter выключен"
-        fi
     fi
 
     echo "Доступные стратегии:"
@@ -288,6 +251,27 @@ main() {
     check_dependencies
     setup_repository
     
+    # Включение GameFilter
+    if $NOINTERACTIVE; then
+        if [ "$gamefilter" == "true" ]; then
+            USE_GAME_FILTER=true
+            log "GameFilter включен"
+        else
+            USE_GAME_FILTER=false
+            log "GameFilter выключен"
+        fi
+    else
+        echo ""
+        read -p "Включить GameFilter? [y/N]:" enable_gamefilter
+        if [[ "$enable_gamefilter" =~ ^[Yy1] ]]; then
+            USE_GAME_FILTER=true
+            log "GameFilter включен"
+        else
+            USE_GAME_FILTER=false
+            log "GameFilter выключен"
+        fi
+    fi
+
     if $NOINTERACTIVE; then
         select_strategy
         setup_nftables "$interface"
@@ -312,8 +296,7 @@ main() {
     
     # Пауза перед выходом
     if ! $NOINTERACTIVE; then
-        echo ""
-        read -p "Нажмите Enter для завершения..."
+        echo "Нажмите Ctrl+C для завершения..."
     fi
 }
 

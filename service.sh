@@ -15,7 +15,7 @@ check_conf_file() {
         return 1
     fi
     
-    local required_fields=("interface" "auto_update" "strategy")
+    local required_fields=("interface" "gamefilter" "strategy")
     for field in "${required_fields[@]}"; do
         # Ищем строку вида field=Значение, где значение не пустое
         if ! grep -q "^${field}=[^[:space:]]" "$CONF_FILE"; then
@@ -42,21 +42,16 @@ create_conf_file() {
             fi
             echo "Неверный выбор. Попробуйте еще раз."
         done
-    
-    # 2. Авто-обновление
-    # read -p "Включить авто-обновление? (true/false) [false]: " auto_update_choice
-    # if [[ "$auto_update_choice" != "true" ]]; then
-    #     auto_update_choice="false"
-    # fi
-    auto_update_choice="false"
 
-    # 3. Gamefilter
-    read -p "Включить Gamefilter? (Y/n) [n]: " auto_update_choice
-    if [[ "$gamefilter_choice" != "true" ]]; then
+    # 2. Gamefilter
+    read -p "Включить Gamefilter? [y/N] [n]: " enable_gamefilter
+    if [[ "$enable_gamefilter" =~ ^[Yy1] ]]; then
+        gamefilter_choice="true"
+    else
         gamefilter_choice="false"
     fi
     
-    # 4. Выбор стратегии
+    # 3. Выбор стратегии
     local strategy_choice=""
     local repo_dir="$HOME_DIR_PATH/zapret-latest"
     
@@ -97,7 +92,6 @@ create_conf_file() {
     # Записываем полученные значения в conf.env
     cat <<EOF > "$CONF_FILE"
 interface=$chosen_interface
-auto_update=$auto_update_choice
 gamefilter=$gamefilter_choice
 strategy=$strategy_choice
 EOF
