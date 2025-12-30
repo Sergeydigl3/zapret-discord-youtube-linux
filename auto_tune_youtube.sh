@@ -11,12 +11,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MAIN_SCRIPT="$SCRIPT_DIR/main_script.sh"
 STOP_SCRIPT="$SCRIPT_DIR/stop_and_clean_nft.sh"
 
+#TODO: найти оптимальное время WAIT_TIME, CURL_TIMEOUT
 # Время ожидания после запуска стратегии (секунды)
 WAIT_TIME=2
-
 # Таймаут для проверки YouTube (секунды)
 CURL_TIMEOUT=2
 
+#TODO: не хардкодить значения 14 и 6. Сделать автоматически по количеству файлов стратегий и подключений.
 # Максимальные значения для параметров
 MAX_STRATEGY=14   # Максимальный номер стратегии
 MAX_CONNECTION=6  # Максимальный номер подключения
