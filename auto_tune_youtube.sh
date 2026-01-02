@@ -19,7 +19,7 @@ RESULTS_FILE="$SCRIPT_DIR/auto_tune_youtube_results.txt"
 
 WAIT_TIME=2           # Пауза после запуска стратегии (сек)
 CURL_TIMEOUT=3        # Таймаут curl (сек)
-MIN_RESPONSE_SIZE=1000 # Минимум байт для валидного ответа
+#MIN_RESPONSE_SIZE=1000 # Минимум байт для валидного ответа
 
 # Цвета
 RED='\033[0;31m'
@@ -111,7 +111,7 @@ check_youtube_main() {
     grep -qi "youtube" "$tmpfile" 2>/dev/null && has_keyword=1
     rm -f "$tmpfile"
     
-    [[ "$code" =~ ^[23] ]] && [[ $size -gt $MIN_RESPONSE_SIZE ]] && [[ $has_keyword -eq 1 ]]
+    [[ "$code" =~ ^[23] ]] && [[ $has_keyword -eq 1 ]]
 }
 
 # Проверка CDN (любой HTTP ответ = успех)
