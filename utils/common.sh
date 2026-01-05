@@ -4,13 +4,13 @@
 
 # Функция для логирования
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')]: $1" >&2
 }
 
 # Функция для отладочного логирования
 debug_log() {
     if [[ "${DEBUG:-false}" == "true" ]]; then
-        echo "[DEBUG] $1"
+        echo "[DEBUG] $1" >&2
     fi
 }
 
