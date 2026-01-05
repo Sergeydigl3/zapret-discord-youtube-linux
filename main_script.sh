@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -eou pipefail
+
 # Константы
 BASE_DIR="$(realpath "$(dirname "$0")")"
 REPO_DIR="$BASE_DIR/zapret-latest"
@@ -29,6 +31,9 @@ cleanup() {
 
 # Импортируем общие функции
 source "$(dirname "$0")/utils/common.sh"
+
+# Импортируем функции firewall
+source "$(dirname "$0")/utils/firewall.sh"
 
 # Функция чтения конфигурационного файла
 load_config() {
@@ -60,7 +65,7 @@ parse_strategy_from_file() {
     local queue_num=0
     local bin_path="bin/"
     debug_log "Parsing strategy file: $file"
-
+    
     while IFS= read -r line; do
         debug_log "Processing line: $line"
         
@@ -68,7 +73,7 @@ parse_strategy_from_file() {
         
         line="${line//%BIN%/$bin_path}"
         line="${line//%LISTS%/lists/}"
-
+        
         # Обрабатываем GameFilter
         if [ "$USE_GAME_FILTER" = true ]; then
             # Заменяем %GameFilter% на порты
@@ -116,101 +121,14 @@ load_strategy() {
     parse_strategy_from_file "$strategy_file"
 }
 
-# Функция настройки firewall (поддержка nftables и iptables)
+
 setup_firewall() {
     local interface="$1"
     
-    # Определяем какой firewall использовать
-    if command -v nft >/dev/null 2>&1; then
-        setup_nftables "$interface"
-    elif command -v iptables >/dev/null 2>&1; then
-        setup_iptables "$interface"
-    else
-        handle_error "Не найден nftables или iptables"
-    fi
+    # Используем универсальную функцию настройки firewall
+    setup_firewall_rules "$interface" "${nft_rules[@]}"
 }
 
-# Функция настройки nftables с метками
-setup_nftables() {
-    local interface="$1"
-    local table_name="inet zapretunix"
-    local chain_name="output"
-    local rule_comment="Added by zapret script"
-    
-    log "Настройка nftables с очисткой только помеченных правил..."
-    
-    # Удаляем существующую таблицу, если она была создана этим скриптом
-    if sudo nft list tables | grep -q "$table_name"; then
-        sudo nft flush chain $table_name $chain_name
-        sudo nft delete chain $table_name $chain_name
-        sudo nft delete table $table_name
-    fi
-    
-    # Добавляем таблицу и цепочку
-    sudo nft add table $table_name
-    sudo nft add chain $table_name $chain_name { type filter hook output priority 0\; }
-    
-    local oif_clause=""
-    if [ -n "$interface" ] && [ "$interface" != "any" ]; then
-        oif_clause="oifname \"$interface\""
-    fi
-
-    # Добавляем правила с пометкой
-    for queue_num in "${!nft_rules[@]}"; do
-        sudo nft add rule $table_name $chain_name $oif_clause ${nft_rules[$queue_num]} comment \"$rule_comment\" ||
-        handle_error "Ошибка при добавлении правила nftables для очереди $queue_num"
-    done
-}
-
-# Функция настройки iptables (для совместимости)
-setup_iptables() {
-    local interface="$1"
-    local chain_name="ZAPRET_UNIX"
-    
-    log "Настройка iptables..."
-    
-    # Очистка существующих правил нашего скрипта
-    sudo iptables -F "$chain_name" 2>/dev/null || true
-    sudo iptables -X "$chain_name" 2>/dev/null || true
-    
-    # Создание новой цепочки
-    sudo iptables -N "$chain_name"
-    
-    # Опция интерфейса
-    local interface_rule=""
-    if [ -n "$interface" ] && [ "$interface" != "any" ]; then
-        interface_rule="-o $interface"
-    fi
-    
-    # Добавление правил
-    for queue_num in "${!nft_rules[@]}"; do
-        local rule="${nft_rules[$queue_num]}"
-        
-        # Конвертируем nftables синтаксис в iptables
-        if [[ "$rule" =~ ^([a-z]+)\ dport\ \{([0-9,-]+)\}\ counter\ queue\ num\ ([0-9]+) ]]; then
-            local protocol="${BASH_REMATCH[1]}"
-            local ports="${BASH_REMATCH[2]}"
-            local queue="${BASH_REMATCH[3]}"
-            
-            # Конвертируем порты из формата {1,2,3-5} в -p tcp --dport 1 -p tcp --dport 2 ...
-            IFS=',' read -ra port_array <<< "$ports"
-            for port_spec in "${port_array[@]}"; do
-                if [[ "$port_spec" =~ ^([0-9]+)-([0-9]+)$ ]]; then
-                    # Диапазон портов
-                    sudo iptables -A "$chain_name" $interface_rule -p "$protocol" --dport "${BASH_REMATCH[1]}:${BASH_REMATCH[2]}" -j NFQUEUE --queue-num "$queue"
-                else
-                    # Одиночный порт
-                    sudo iptables -A "$chain_name" $interface_rule -p "$protocol" --dport "$port_spec" -j NFQUEUE --queue-num "$queue"
-                fi
-            done
-        fi
-    done
-    
-    # Подключаем цепочку к OUTPUT
-    sudo iptables -A OUTPUT -j "$chain_name"
-}
-
-# Функция запуска nfqws (безопасная версия без eval)
 start_nfqws() {
     log "Запуск процессов nfqws..."
     sudo pkill -f nfqws

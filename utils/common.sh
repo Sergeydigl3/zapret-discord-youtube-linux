@@ -36,7 +36,12 @@ safe_exec() {
 
 # Функция обработки ошибок
 handle_error() {
-    log "Ошибка: $1"
+    local msg="$1"
+    local file="${BASH_SOURCE[1]}"
+    local line="${BASH_LINENO[0]}"
+
+    echo "Ошибка: $msg"
+    echo "  at $file:$line"
     exit 1
 }
 
