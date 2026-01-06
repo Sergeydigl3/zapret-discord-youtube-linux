@@ -1,0 +1,6 @@
+# Test configuration file
+strategy: general.bat
+interface: any
+gamefilter: true
+debug: true
+nointeractive: false

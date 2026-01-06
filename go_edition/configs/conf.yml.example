@@ -1,0 +1,22 @@
+# Zapret Discord YouTube Go Edition - Configuration File
+# This file contains the main configuration for the application
+
+# Strategy file to use (relative to zapret-latest directory or absolute path)
+# Example: strategy: general.bat
+strategy: general.bat
+
+# Network interface to filter (use "any" for all interfaces)
+# Example: interface: enp0s3
+interface: any
+
+# Enable GameFilter to exclude game ports from filtering
+gamefilter: false
+
+# Path to nfqws binary (default: ./nfqws)
+# nfqws_path: ./nfqws
+
+# Enable debug logging
+debug: false
+
+# Run in non-interactive mode
+nointeractive: false
