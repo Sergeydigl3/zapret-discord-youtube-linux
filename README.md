@@ -1,5 +1,5 @@
 # Stable4
-Я захардкодил последний рабочий конфиг от Flowseal на [этом коммите](https://github.com/Flowseal/zapret-discord-youtube/commit/8a1885d7d06a098989c450bb851a9508d977725d).
+Я захардкодил последний рабочий конфиг от Flowseal на [этом коммите](https://github.com/Flowseal/zapret-discord-youtube/commit/e1322fd3afe57ca14f4d79b7ac5f92e4513cd0f3).
 
 Обновляю скрипт редко, для поддержания работоспособности относительно версии для Win. То бишь, пока не происходит массовых отказов всех стратегий.
 
