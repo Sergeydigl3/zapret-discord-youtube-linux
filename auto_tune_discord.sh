@@ -15,7 +15,7 @@ STOP_SCRIPT="$SCRIPT_DIR/stop_and_clean_nft.sh"
 REPO_DIR="$SCRIPT_DIR/zapret-latest"
 CUSTOM_DIR="$SCRIPT_DIR/custom-strategies"
 CONF_FILE="$SCRIPT_DIR/conf.env"
-RESULTS_FILE="$SCRIPT_DIR/auto_tune_youtube_results.txt"
+RESULTS_FILE="$SCRIPT_DIR/auto_tune_discord_results.txt"
 
 WAIT_TIME=2           # Пауза после запуска стратегии (сек)
 CURL_TIMEOUT=3        # Таймаут curl (сек)
@@ -123,7 +123,7 @@ check_discord_cdn() {
 
 # Полная проверка YouTube (с выводом)
 check_discord_full() {
-    echo "Проверяем YouTube (TLS 1.3):"
+    echo "Проверяем Discord (TLS 1.3):"
     echo -n "  discord.com... "
     if check_discord_main; then
         echo "✓"
