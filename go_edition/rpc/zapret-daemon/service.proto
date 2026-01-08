@@ -1,0 +1,86 @@
+//go:generate twirp generate --proto service.proto --go_out . --go_opt paths=source_relative --go_twirp_out . --go_twirp_opt paths=source_relative
+
+syntax = "proto3";
+
+package zapret.twirp;
+
+option go_package = "github.com/sergeydigl3/zapret-discord-youtube-go/internal/twirp";
+
+// ZapretService defines the Twirp service interface
+service ZapretService {
+    // Strategies functionality
+    rpc GetStrategyList(GetStrategyListRequest) returns (GetStrategyListResponse);
+    rpc RunSelectedStrategy(RunSelectedStrategyRequest) returns (RunSelectedStrategyResponse);
+    rpc StopStrategy(StopStrategyRequest) returns (StopStrategyResponse);
+
+    // Requirements functionality
+    rpc InstallZapret(InstallZapretRequest) returns (InstallZapretResponse);
+    rpc GetAvailableVersions(GetAvailableVersionsRequest) returns (GetAvailableVersionsResponse);
+
+    // Debug functionality
+    rpc GetActiveNFTRules(GetActiveNFTRulesRequest) returns (GetActiveNFTRulesResponse);
+    rpc GetActiveProcesses(GetActiveProcessesRequest) returns (GetActiveProcessesResponse);
+
+    // Daemon control
+    rpc RestartDaemon(RestartDaemonRequest) returns (RestartDaemonResponse);
+}
+
+// Strategies messages
+message GetStrategyListRequest {}
+
+message GetStrategyListResponse {
+    repeated string strategy_paths = 1;
+}
+
+message RunSelectedStrategyRequest {
+    string strategy_path = 1;
+}
+
+message RunSelectedStrategyResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message StopStrategyRequest {}
+
+message StopStrategyResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+// Requirements messages
+message InstallZapretRequest {
+    string version = 1;
+}
+
+message InstallZapretResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message GetAvailableVersionsRequest {}
+
+message GetAvailableVersionsResponse {
+    repeated string versions = 1;
+}
+
+// Debug messages
+message GetActiveNFTRulesRequest {}
+
+message GetActiveNFTRulesResponse {
+    repeated string rules = 1;
+}
+
+message GetActiveProcessesRequest {}
+
+message GetActiveProcessesResponse {
+    repeated string processes = 1;
+}
+
+// Daemon control messages
+message RestartDaemonRequest {}
+
+message RestartDaemonResponse {
+    bool success = 1;
+    string message = 2;
+}

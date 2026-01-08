@@ -17,7 +17,6 @@ import (
 	"github.com/sergeydigl3/zapret-discord-youtube-go/internal/firewall"
 	"github.com/sergeydigl3/zapret-discord-youtube-go/internal/logging"
 	"github.com/sergeydigl3/zapret-discord-youtube-go/internal/nfqws"
-	"github.com/sergeydigl3/zapret-discord-youtube-go/internal/service"
 	"github.com/sergeydigl3/zapret-discord-youtube-go/internal/strategy"
 )
 
@@ -43,7 +42,6 @@ func main() {
 	}
 
 	// Add subcommands
-	rootCmd.AddCommand(createServiceCommand())
 	rootCmd.AddCommand(createConfigCommand())
 	rootCmd.AddCommand(createDebugCommand())
 
@@ -128,86 +126,6 @@ func handleSignals(cancel context.CancelFunc) {
 	cancel()
 }
 
-func createServiceCommand() *cobra.Command {
-	serviceCmd := &cobra.Command{
-		Use:   "service",
-		Short: "Manage system service installation",
-		Long:  "Install, remove, start, stop, or check the status of the Zapret service.",
-	}
-
-	var installCmd = &cobra.Command{
-		Use:   "install",
-		Short: "Install Zapret service",
-		Long:  "Install the Zapret service on the system.",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			serviceManager, err := service.NewManager()
-			if err != nil {
-				return fmt.Errorf("failed to create service manager: %w", err)
-			}
-			return serviceManager.Install()
-		},
-	}
-
-	var removeCmd = &cobra.Command{
-		Use:   "remove",
-		Short: "Remove Zapret service",
-		Long:  "Remove the Zapret service from the system.",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			serviceManager, err := service.NewManager()
-			if err != nil {
-				return fmt.Errorf("failed to create service manager: %w", err)
-			}
-			return serviceManager.Remove()
-		},
-	}
-
-	var startCmd = &cobra.Command{
-		Use:   "start",
-		Short: "Start Zapret service",
-		Long:  "Start the Zapret service.",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			serviceManager, err := service.NewManager()
-			if err != nil {
-				return fmt.Errorf("failed to create service manager: %w", err)
-			}
-			return serviceManager.Start()
-		},
-	}
-
-	var stopCmd = &cobra.Command{
-		Use:   "stop",
-		Short: "Stop Zapret service",
-		Long:  "Stop the Zapret service.",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			serviceManager, err := service.NewManager()
-			if err != nil {
-				return fmt.Errorf("failed to create service manager: %w", err)
-			}
-			return serviceManager.Stop()
-		},
-	}
-
-	var statusCmd = &cobra.Command{
-		Use:   "status",
-		Short: "Check Zapret service status",
-		Long:  "Check the status of the Zapret service.",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			serviceManager, err := service.NewManager()
-			if err != nil {
-				return fmt.Errorf("failed to create service manager: %w", err)
-			}
-			return serviceManager.Status()
-		},
-	}
-
-	serviceCmd.AddCommand(installCmd)
-	serviceCmd.AddCommand(removeCmd)
-	serviceCmd.AddCommand(startCmd)
-	serviceCmd.AddCommand(stopCmd)
-	serviceCmd.AddCommand(statusCmd)
-
-	return serviceCmd
-}
 
 func createConfigCommand() *cobra.Command {
 	configCmd := &cobra.Command{

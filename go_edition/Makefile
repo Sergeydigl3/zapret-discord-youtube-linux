@@ -18,6 +18,28 @@ build:
 		./cmd/zapret
 	@echo "Build complete: bin/$(BINARY_NAME)"
 
+# Build the daemon
+build-daemon:
+	@echo "Building Zapret daemon..."
+	@go build -o bin/zapret-daemon \
+		-ldflags="-s -w -X main.Version=$(VERSION) -X main.BuildDate=$(BUILD_DATE)" \
+		./cmd/zapret-daemon
+	@echo "Build complete: bin/zapret-daemon"
+
+# Build the CLI
+build-cli:
+	@echo "Building Zapret CLI..."
+	@go build -o bin/zapret-cli \
+		-ldflags="-s -w -X main.Version=$(VERSION) -X main.BuildDate=$(BUILD_DATE)" \
+		./cmd/zapret-cli
+	@echo "Build complete: bin/zapret-cli"
+
+# Build all components
+build-all:
+	@$(MAKE) build
+	@$(MAKE) build-daemon
+	@$(MAKE) build-cli
+
 # Build for specific platform
 build-linux:
 	@echo "Building for Linux..."
@@ -55,6 +77,27 @@ run-debug:
 	@echo "Running with debug logging..."
 	@ZAPRET_LOG_LEVEL=debug ./bin/$(BINARY_NAME)
 
+# Run the daemon
+run-daemon:
+	@echo "Running Zapret daemon..."
+	@./bin/zapret-daemon
+
+# Run the daemon in background
+run-daemon-bg:
+	@echo "Running Zapret daemon in background..."
+	@nohup ./bin/zapret-daemon > /dev/null 2>&1 &
+	@echo $! > /tmp/zapret-daemon.pid
+	@echo "Daemon started with PID: $$(cat /tmp/zapret-daemon.pid)"
+
+# Stop the daemon
+stop-daemon:
+	@echo "Stopping Zapret daemon..."
+	@if [ -f /tmp/zapret-daemon.pid ]; then \
+		kill $$(cat /tmp/zapret-daemon.pid) && rm /tmp/zapret-daemon.pid; \
+		else \
+		./bin/zapret-cli stop; \
+		fi
+
 # Install the application
 install:
 	@echo "Installing Zapret Discord YouTube..."
@@ -62,30 +105,15 @@ install:
 	@sudo chmod +x /usr/local/bin/$(BINARY_NAME)
 	@echo "Installation complete"
 
-# Install as service
-install-service:
-	@echo "Installing as service..."
-	@sudo ./bin/$(BINARY_NAME) service install
-
-# Uninstall service
-uninstall-service:
-	@echo "Uninstalling service..."
-	@sudo ./bin/$(BINARY_NAME) service remove
-
-# Start service
-start-service:
-	@echo "Starting service..."
-	@sudo ./bin/$(BINARY_NAME) service start
-
-# Stop service
-stop-service:
-	@echo "Stopping service..."
-	@sudo ./bin/$(BINARY_NAME) service stop
-
-# Check service status
-service-status:
-	@echo "Checking service status..."
-	@sudo ./bin/$(BINARY_NAME) service status
+# Install daemon and CLI
+install-daemon:
+	@echo "Installing Zapret daemon and CLI..."
+	@sudo cp bin/zapret-daemon /usr/local/bin/zapret-daemon
+	@sudo cp bin/zapret-cli /usr/local/bin/zapret-cli
+	@sudo chmod +x /usr/local/bin/zapret-daemon /usr/local/bin/zapret-cli
+	@sudo mkdir -p /etc/zapret /var/log/zapret
+	@sudo cp configs/conf.daemon.yml.example /etc/zapret/conf.yml
+	@echo "Installation complete"
 
 # Clean build artifacts
 clean:
@@ -160,6 +188,12 @@ docker-release:
 		--push .
 	@echo "Release created and pushed"
 
+# Generate protobuf code
+gen:
+	@echo "Generating protobuf code..."
+	@protoc --proto_path=. --twirp_out=. --go_out=. rpc/zapret-daemon/service.proto
+	@echo "Protobuf code generated"
+
 # Update dependencies
 deps:
 	@echo "Updating dependencies..."
@@ -175,18 +209,19 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@echo "  build              - Build the application"
+	@echo "  build-daemon       - Build the daemon"
+	@echo "  build-cli          - Build the CLI"
+	@echo "  build-all          - Build all components"
 	@echo "  build-linux        - Build for Linux"
 	@echo "  build-windows      - Build for Windows"
 	@echo "  build-mac          - Build for macOS"
-	@echo "  build-all          - Build for all platforms"
 	@echo "  run                - Run the application"
 	@echo "  run-debug          - Run with debug logging"
+	@echo "  run-daemon         - Run the daemon"
+	@echo "  run-daemon-bg      - Run daemon in background"
+	@echo "  stop-daemon        - Stop the daemon"
 	@echo "  install            - Install the application"
-	@echo "  install-service    - Install as service"
-	@echo "  uninstall-service  - Uninstall service"
-	@echo "  start-service      - Start service"
-	@echo "  stop-service       - Stop service"
-	@echo "  service-status     - Check service status"
+	@echo "  install-daemon     - Install daemon and CLI"
 	@echo "  clean              - Clean build artifacts"
 	@echo "  test               - Run tests"
 	@echo "  test-race          - Run tests with race detector"
@@ -216,4 +251,4 @@ vuln-check:
 	@echo "Checking for vulnerabilities..."
 	@govulncheck ./...
 
-.PHONY: all build build-linux build-windows build-mac build-all run run-debug install install-service uninstall-service start-service stop-service service-status clean test test-race test-coverage fmt lint docs docker-build docker-run docker-push docker-release deps help dev profile vuln-check
+.PHONY: all build build-linux build-windows build-mac build-all run run-debug install install-service uninstall-service start-service stop-service service-status clean gen test test-race test-coverage fmt lint docs docker-build docker-run docker-push docker-release deps help dev profile vuln-check

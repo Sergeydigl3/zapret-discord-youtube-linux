@@ -1,0 +1,47 @@
+# Zapret Discord YouTube Go Edition - Daemon Configuration File
+# This file contains the main configuration for the Zapret daemon
+
+# Strategy file to use (relative to zapret-latest directory or absolute path)
+strategy: general_nix1.bat
+
+# Network interface to filter (use "any" for all interfaces)
+interface: any
+
+# Enable GameFilter to exclude game ports from filtering
+gamefilter: false
+
+# Path to nfqws binary (default: ./nfqws)
+# nfqws_path: ./nfqws
+
+# Enable debug logging
+debug: false
+
+# Run in non-interactive mode
+nointeractive: false
+
+# Enable colored logging output
+log_color: true
+
+# Daemon-specific configuration
+daemon:
+  # Unix socket path for IPC communication
+  socket_path: "/var/run/zapret.sock"
+  
+  # PID file path
+  pid_file: "/var/run/zapret.pid"
+  
+  # Log file path
+  log_file: "/var/log/zapret/daemon.log"
+
+# Firewall configuration
+firewall:
+  # Timeout for firewall operations (in seconds)
+  timeout: 30
+
+# NFQWS configuration
+nfqws:
+  # Maximum number of processes
+  max_processes: 10
+  
+  # Process restart delay (in seconds)
+  restart_delay: 5

@@ -38,6 +38,11 @@ type Config struct {
 	NoInteractive bool `mapstructure:"nointeractive"`
 	// LogColor enables colored logging output
 	LogColor *bool `mapstructure:"log_color"`
+	
+	// Daemon-specific configuration
+	SocketPath string `mapstructure:"socket_path"`
+	PidFile    string `mapstructure:"pid_file"`
+	LogFile    string `mapstructure:"log_file"`
 }
 
 // Manager handles configuration operations
@@ -120,6 +125,11 @@ func (m *Manager) setDefaults() {
 	m.viper.SetDefault("nointeractive", false)
 	m.viper.SetDefault("gamefilter", false)
 	m.viper.SetDefault("log_color", true)
+	
+	// Daemon defaults
+	m.viper.SetDefault("socket_path", "/var/run/zapret.sock")
+	m.viper.SetDefault("pid_file", "/var/run/zapret.pid")
+	m.viper.SetDefault("log_file", "/var/log/zapret/daemon.log")
 }
 
 func (m *Manager) loadFromFile() error {
