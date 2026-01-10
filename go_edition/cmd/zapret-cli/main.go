@@ -9,7 +9,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sergeydigl3/zapret-discord-youtube-go/internal/twirp"
 	"github.com/sergeydigl3/zapret-discord-youtube-go/internal/zapret-daemon"
 )
 
@@ -45,6 +44,7 @@ func main() {
 	rootCmd.AddCommand(createConfigCommand())
 	rootCmd.AddCommand(createFirewallCommand())
 	rootCmd.AddCommand(createProcessesCommand())
+	rootCmd.AddCommand(createTUICommand())
 
 	// Execute the command
 	if err := rootCmd.Execute(); err != nil {
@@ -198,6 +198,24 @@ func createProcessesCommand() *cobra.Command {
 			fmt.Printf("Active Processes: %d\n", len(resp.Processes))
 			for i, process := range resp.Processes {
 				fmt.Printf("  %d. %s\n", i+1, process)
+			}
+			return nil
+		},
+	}
+}
+
+func createTUICommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "tui",
+		Short: "Launch TUI interface",
+		Long:  "Launch the Terminal User Interface for controlling the Zapret daemon.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Use mock client for TUI mode to avoid twirp client issues
+			mockClient := NewMockZapretServiceClient()
+
+			app := NewTUIApp(mockClient)
+			if err := app.Run(); err != nil {
+				return fmt.Errorf("TUI error: %w", err)
 			}
 			return nil
 		},

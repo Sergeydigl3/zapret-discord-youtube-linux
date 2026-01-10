@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/sergeydigl3/zapret-discord-youtube-go/internal/zapret-daemon"
+	zapretdaemon "github.com/sergeydigl3/zapret-discord-youtube-go/internal/zapret-daemon"
 	"github.com/twitchtv/twirp"
 )
 

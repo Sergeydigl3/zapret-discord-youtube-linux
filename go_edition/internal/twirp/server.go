@@ -2,19 +2,19 @@
 package twirp
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	zapretdaemon "github.com/sergeydigl3/zapret-discord-youtube-go/internal/zapret-daemon"
 	"github.com/twitchtv/twirp"
 )
 
 // TwirpServer wraps the ZapretService implementation
 type TwirpServer struct {
-	service ZapretService
+	service zapretdaemon.ZapretService
 	server  *http.Server
 	port    int
 	mux     *http.ServeMux
@@ -37,7 +37,7 @@ func WithPort(port int) TwirpServerOption {
 	}
 }
 
-func NewTwirpServer(service ZapretService, opts ...TwirpServerOption) *TwirpServer {
+func NewTwirpServer(service zapretdaemon.ZapretService, opts ...TwirpServerOption) *TwirpServer {
 	server := &TwirpServer{
 		service: service,
 		port:    8080, // default port

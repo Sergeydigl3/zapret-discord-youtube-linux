@@ -4,7 +4,7 @@ syntax = "proto3";
 
 package zapret.twirp;
 
-option go_package = "github.com/sergeydigl3/zapret-discord-youtube-go/internal/twirp";
+option go_package = "github.com/sergeydigl3/zapret-discord-youtube-go/rpc/zapret-daemon";
 
 // ZapretService defines the Twirp service interface
 service ZapretService {
