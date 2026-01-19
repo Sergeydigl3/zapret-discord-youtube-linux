@@ -204,7 +204,7 @@ parse_bat_file() {
             # nfqws_args="${nfqws_args%% --new*}"
             
             # Очищаем лишние пробелы
-            nfqws_args=$(echo "$nfqws_args" | xargs)
+            nfqws_args=$(echo "$match" | xargs)
             nfqws_args="${nfqws_args//=^!/=!}"
             
             nfqws_params+=("$nfqws_args")
