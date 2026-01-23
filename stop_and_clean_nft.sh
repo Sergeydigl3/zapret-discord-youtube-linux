@@ -1,55 +1,50 @@
 #!/usr/bin/env bash
 
-# Константы
-TABLE_NAME="inet zapretunix"
-CHAIN_NAME="output"
-RULE_COMMENT="Added by zapret script"
+# ===== Константы =====
+INET_TABLE="inet zapretunix"
+IP_TABLE="ip zapretunix"
 
-# Функция для логирования
+# ===== Логирование =====
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
-# Остановка процессов nfqws
+# ===== Остановка nfqws =====
 stop_nfqws_processes() {
-    log "Остановка всех процессов nfqws..."
+    log "Остановка процессов nfqws..."
     sudo pkill -f nfqws || log "Процессы nfqws не найдены"
 }
 
-# Очистка помеченных правил nftables
+# ===== Очистка nftables =====
 clear_firewall_rules() {
-    log "Очистка правил nftables, добавленных скриптом..."
-    
-    # Проверка на существование таблицы и цепочки
-    if sudo nft list tables | grep -q "$TABLE_NAME"; then
-        if sudo nft list chain $TABLE_NAME $CHAIN_NAME >/dev/null 2>&1; then
-            # Получаем все handle значений правил с меткой, добавленных скриптом
-            handles=$(sudo nft -a list chain $TABLE_NAME $CHAIN_NAME | grep "$RULE_COMMENT" | awk '{print $NF}')
-            
-            # Удаление каждого правила по handle значению
-            for handle in $handles; do
-                sudo nft delete rule $TABLE_NAME $CHAIN_NAME handle $handle ||
-                log "Не удалось удалить правило с handle $handle"
-            done
-            
-            # Удаление цепочки и таблицы, если они пусты
-            sudo nft delete chain $TABLE_NAME $CHAIN_NAME
-            sudo nft delete table $TABLE_NAME
-            
-            log "Очистка завершена."
-        else
-            log "Цепочка $CHAIN_NAME не найдена в таблице $TABLE_NAME."
-        fi
+    log "Очистка nftables (zapretunix)..."
+
+    # inet table — всегда
+    if sudo nft list table inet zapretunix >/dev/null 2>&1; then
+        sudo nft delete table inet zapretunix \
+            && log "Удалена таблица inet zapretunix" \
+            || log "Ошибка при удалении inet zapretunix"
     else
-        log "Таблица $TABLE_NAME не найдена. Нечего очищать."
+        log "Таблица inet zapretunix не найдена"
     fi
+
+    # ip table — только если был router mode
+    if sudo nft list table ip zapretunix >/dev/null 2>&1; then
+        sudo nft delete table ip zapretunix \
+            && log "Удалена таблица ip zapretunix" \
+            || log "Ошибка при удалении ip zapretunix"
+    else
+        log "Таблица ip zapretunix не найдена"
+    fi
+
+    log "Очистка nftables завершена"
 }
 
-# Основной процесс
+# ===== Основной процесс =====
 stop_and_clear_firewall() {
-    stop_nfqws_processes # Останавливаем процессы nfqws
-    clear_firewall_rules # Чистим правила nftables
+    stop_nfqws_processes
+    clear_firewall_rules
 }
 
-# Запуск
+# ===== Запуск =====
 stop_and_clear_firewall

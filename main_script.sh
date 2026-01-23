@@ -217,41 +217,82 @@ parse_bat_file() {
 # Обновленная функция настройки nftables с метками
 setup_nftables() {
     local interface="$1"
-    local table_name="inet zapretunix"
-    local chain_name="output"
+    local table_inet="inet zapretunix"
+    local table_ip="ip zapretunix"
+    local common_chain="zapret_common"
     local rule_comment="Added by zapret script"
     local queue_num=220
-    
-    log "Настройка nftables с очисткой только помеченных правил..."
-    
-    # Удаляем существующую таблицу, если она была создана этим скриптом
-    if sudo nft list tables | grep -q "$table_name"; then
-        sudo nft flush chain $table_name $chain_name
-        sudo nft delete chain $table_name $chain_name
-        sudo nft delete table $table_name
+
+    log "Настройка nftables (ROUTER_MODE=${ROUTER_MODE:-0})..."
+
+    # Очистка только наших таблиц
+    sudo nft delete table inet zapretunix 2>/dev/null
+    sudo nft delete table ip zapretunix 2>/dev/null
+
+    # ========== inet table ==========
+    sudo nft add table inet zapretunix
+
+    # Общая логическая цепочка
+    sudo nft add chain $table_inet $common_chain
+
+    # OUTPUT — всегда
+    sudo nft add chain $table_inet output '{
+        type filter hook output priority mangle;
+        policy accept;
+    }'
+    sudo nft add rule $table_inet output jump $common_chain
+
+    # FORWARD — только если router mode
+    if [ "$ROUTER_MODE" = "1" ]; then
+        sudo nft add chain $table_inet forward '{
+            type filter hook forward priority mangle;
+            policy accept;
+        }'
+        sudo nft add rule $table_inet forward jump $common_chain
     fi
-    
-    # Добавляем таблицу и цепочку
-    sudo nft add table $table_name
-    sudo nft add chain $table_name $chain_name { type filter hook output priority 0\; }
-    
+
+    # Исключаем локальные сети
+    sudo nft add rule $table_inet $common_chain ip daddr {
+        127.0.0.0/8,
+        10.0.0.0/8,
+        172.16.0.0/12,
+        192.168.0.0/16,
+        224.0.0.0/4,
+        255.255.255.255
+    } return
+
     local oif_clause=""
     if [ -n "$interface" ] && [ "$interface" != "any" ]; then
         oif_clause="oifname \"$interface\""
     fi
 
-    # Добавляем правило для TCP портов (если есть)
+    # TCP
     if [ -n "$tcp_ports" ]; then
-        sudo nft add rule $table_name $chain_name $oif_clause meta mark != 0x40000000 tcp dport {$tcp_ports} counter queue num $queue_num bypass comment \"$rule_comment\" ||
-        handle_error "Ошибка при добавлении TCP правила nftables"
-        log "Добавлено TCP правило для портов: $tcp_ports -> queue $queue_num"
+        sudo nft add rule $table_inet $common_chain \
+            $oif_clause meta mark != 0x40000000 \
+            tcp dport { $tcp_ports } \
+            counter queue num $queue_num bypass \
+            comment \"$rule_comment\" \
+        || handle_error "Ошибка при добавлении TCP правила nftables"
     fi
-    
-    # Добавляем правило для UDP портов (если есть)
+
+    # UDP
     if [ -n "$udp_ports" ]; then
-        sudo nft add rule $table_name $chain_name $oif_clause meta mark != 0x40000000 udp dport {$udp_ports} counter queue num $queue_num bypass comment \"$rule_comment\" ||
-        handle_error "Ошибка при добавлении UDP правила nftables"
-        log "Добавлено UDP правило для портов: $udp_ports -> queue $queue_num"
+        sudo nft add rule $table_inet $common_chain \
+            $oif_clause meta mark != 0x40000000 \
+            udp dport { $udp_ports } \
+            counter queue num $queue_num bypass \
+            comment \"$rule_comment\" \
+        || handle_error "Ошибка при добавлении UDP правила nftables"
+    fi
+
+    # ========== NAT (только router mode) ==========
+    if [ "$ROUTER_MODE" = "1" ]; then
+        sudo nft add table ip zapretunix
+        sudo nft add chain $table_ip postrouting '{
+            type nat hook postrouting priority srcnat;
+        }'
+        sudo nft add rule $table_ip postrouting oifname "$interface" masquerade
     fi
 }
 
@@ -266,8 +307,8 @@ start_nfqws() {
         full_params="$full_params $params"
     done
     
-    debug_log "Запуск nfqws с параметрами: $NFQWS_PATH --daemon --dpi-desync-fwmark=0x40000000 --qnum=220 $full_params"
-    eval "sudo $NFQWS_PATH --daemon --dpi-desync-fwmark=0x40000000 --qnum=220 $full_params" ||
+    debug_log "Запуск nfqws с параметрами: $NFQWS_PATH --user=root --daemon --dpi-desync-fwmark=0x40000000 --qnum=220 $full_params"
+    eval "sudo $NFQWS_PATH --user=root --daemon --dpi-desync-fwmark=0x40000000 --qnum=220 $full_params" ||
     handle_error "Ошибка при запуске nfqws"
 }
 
