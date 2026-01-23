@@ -117,6 +117,8 @@ select_strategy() {
     # Объединяем списки (кастомные будут первыми)
     local bat_files=("${custom_files[@]}" "${repo_files[@]}")
     
+    IFS=$'\n' bat_files=($(printf '%s\n' "${bat_files[@]}" | sort)); unset IFS
+
     if [ ${#bat_files[@]} -eq 0 ]; then
         cd ..
         handle_error "Не найдены подходящие .bat файлы"
