@@ -228,69 +228,100 @@ setup_nftables() {
     log "Настройка nftables (ROUTER_MODE=${ROUTER_MODE:-0})..."
 
     # Очистка только наших таблиц
-    sudo nft delete table inet zapretunix 2>/dev/null
-    sudo nft delete table ip zapretunix 2>/dev/null
+    sudo nft delete table inet zapretunix 2>/dev/null || true
+    sudo nft delete table ip zapretunix 2>/dev/null || true
 
     # ========== inet table ==========
-    sudo nft add table inet zapretunix
+    log "Создание таблицы inet zapretunix..."
+    sudo nft add table inet zapretunix || handle_error "Ошибка создания inet таблицы"
 
     # Общая логическая цепочка
-    sudo nft add chain $table_inet $common_chain
+    log "Создание цепочки $common_chain..."
+    sudo nft add chain $table_inet $common_chain || handle_error "Ошибка создания цепочки $common_chain"
 
     # OUTPUT — всегда
+    log "Создание цепочки output..."
     sudo nft add chain $table_inet output '{
         type filter hook output priority mangle;
         policy accept;
-    }'
-    sudo nft add rule $table_inet output jump $common_chain
+    }' || handle_error "Ошибка создания цепочки output"
+    
+    sudo nft add rule $table_inet output jump $common_chain || handle_error "Ошибка добавления правила jump в output"
 
     # FORWARD — только если router mode
     if [ "$ROUTER_MODE" = "1" ]; then
+        log "Создание цепочки forward (router mode)..."
         sudo nft add chain $table_inet forward '{
             type filter hook forward priority mangle;
             policy accept;
-        }'
-        sudo nft add rule $table_inet forward jump $common_chain
+        }' || handle_error "Ошибка создания цепочки forward"
+        
+        sudo nft add rule $table_inet forward jump $common_chain || handle_error "Ошибка добавления правила jump в forward"
     fi
 
     # Исключаем локальные сети
+    log "Добавление правил исключения локальных сетей..."
     sudo nft add rule $table_inet $common_chain \
         ip daddr { 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 224.0.0.0/4, 255.255.255.255 } \
-        return
+        return || handle_error "Ошибка добавления правила исключения локальных сетей"
 
     local oif_clause=""
     if [ -n "$interface" ] && [ "$interface" != "any" ]; then
         oif_clause="oifname \"$interface\""
+        log "Используется интерфейс: $interface"
     fi
 
     # TCP
     if [ -n "$tcp_ports" ]; then
-        sudo nft add rule $table_inet $common_chain \
-            $oif_clause meta mark != 0x40000000 \
-            tcp dport { $tcp_ports } \
-            counter queue num $queue_num bypass \
-            comment \"$rule_comment\" \
-        || handle_error "Ошибка при добавлении TCP правила nftables"
+        log "Добавление TCP правил для портов: $tcp_ports"
+        if [ -n "$oif_clause" ]; then
+            sudo nft add rule $table_inet $common_chain \
+                $oif_clause meta mark != 0x40000000 \
+                tcp dport { $tcp_ports } \
+                counter queue num $queue_num bypass \
+                comment \"$rule_comment\" \
+            || handle_error "Ошибка при добавлении TCP правила nftables"
+        else
+            sudo nft add rule $table_inet $common_chain \
+                meta mark != 0x40000000 \
+                tcp dport { $tcp_ports } \
+                counter queue num $queue_num bypass \
+                comment \"$rule_comment\" \
+            || handle_error "Ошибка при добавлении TCP правила nftables"
+        fi
     fi
 
     # UDP
     if [ -n "$udp_ports" ]; then
-        sudo nft add rule $table_inet $common_chain \
-            $oif_clause meta mark != 0x40000000 \
-            udp dport { $udp_ports } \
-            counter queue num $queue_num bypass \
-            comment \"$rule_comment\" \
-        || handle_error "Ошибка при добавлении UDP правила nftables"
+        log "Добавление UDP правил для портов: $udp_ports"
+        if [ -n "$oif_clause" ]; then
+            sudo nft add rule $table_inet $common_chain \
+                $oif_clause meta mark != 0x40000000 \
+                udp dport { $udp_ports } \
+                counter queue num $queue_num bypass \
+                comment \"$rule_comment\" \
+            || handle_error "Ошибка при добавлении UDP правила nftables"
+        else
+            sudo nft add rule $table_inet $common_chain \
+                meta mark != 0x40000000 \
+                udp dport { $udp_ports } \
+                counter queue num $queue_num bypass \
+                comment \"$rule_comment\" \
+            || handle_error "Ошибка при добавлении UDP правила nftables"
+        fi
     fi
 
     # ========== NAT (только router mode) ==========
     if [ "$ROUTER_MODE" = "1" ]; then
-        sudo nft add table ip zapretunix
+        log "Настройка NAT (router mode)..."
+        sudo nft add table ip zapretunix || handle_error "Ошибка создания ip таблицы"
         sudo nft add chain $table_ip postrouting '{
             type nat hook postrouting priority srcnat;
-        }'
-        sudo nft add rule $table_ip postrouting oifname "$interface" masquerade
+        }' || handle_error "Ошибка создания цепочки postrouting"
+        sudo nft add rule $table_ip postrouting oifname "$interface" masquerade || handle_error "Ошибка добавления правила masquerade"
     fi
+
+    log "Настройка nftables завершена успешно"
 }
 
 # Функция запуска nfqws
