@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 
 # Константы
-SERVICE_NAME="zapret_discord_youtube"
-SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
 HOME_DIR_PATH="$(dirname "$0")"
 MAIN_SCRIPT_PATH="$(dirname "$0")/main_script.sh"   # Путь к основному скрипту
 CONF_FILE="$(dirname "$0")/conf.env"                # Путь к файлу конфигурации
 STOP_SCRIPT="$(dirname "$0")/stop_and_clean_nft.sh" # Путь к скрипту остановки и очистки nftables
 CUSTOM_STRATEGIES_DIR="$HOME_DIR_PATH/custom-strategies"
+BACKENDS_DIR="$HOME_DIR_PATH/init-backends"
 
 # Функция для проверки существования conf.env и обязательных непустых полей
 check_conf_file() {
@@ -104,7 +103,8 @@ edit_conf_file() {
   echo "Конфигурация обновлена."
 
   # Если сервис активен, предлагаем перезапустить
-  if systemctl is-active --quiet "$SERVICE_NAME"; then
+  check_service_status >/dev/null 2>&1
+  if [ $? -eq 2 ]; then
     read -p "Сервис активен. Перезапустить сервис для применения новых настроек? (Y/n): " answer
     if [[ ${answer:-Y} =~ ^[Yy]$ ]]; then
       restart_service
@@ -121,108 +121,30 @@ check_nfqws_status() {
     fi
 }
 
-# Функция для проверки статуса сервиса
-check_service_status() {
-    if ! systemctl list-unit-files | grep -q "$SERVICE_NAME.service"; then
-        echo "Статус: Сервис не установлен."
-        return 1
+detect_init_system() {
+    if [[ -d /run/systemd/system ]] || grep -q systemd <(ps -p 1 -o comm=); then
+        echo "systemd"
+        return
     fi
-    
-    if systemctl is-active --quiet "$SERVICE_NAME"; then
-        echo "Статус: Сервис установлен и активен."
-        return 2
-    else
-        echo "Статус: Сервис установлен, но не активен."
-        return 3
+
+    if [[ -f /sbin/openrc ]] || [[ -f /usr/sbin/openrc ]] || type rc-status >/dev/null 2>&1; then
+        echo "openrc"
+        return
     fi
+
+    echo "unknown"
 }
 
-# Функция для установки сервиса
-install_service() {
-    # Если конфиг отсутствует или неполный — создаём его интерактивно
-    if ! check_conf_file; then
-        read -p "Конфигурация отсутствует или неполная. Создать конфигурацию сейчас? (y/n): " answer
-        if [[ $answer =~ ^[Yy]$ ]]; then
-            create_conf_file
-        else
-            echo "Установка отменена."
-            return
-        fi
-        # Перепроверяем конфигурацию
-        if ! check_conf_file; then
-            echo "Файл конфигурации все еще некорректен. Установка отменена."
-            return
-        fi
-    fi
-    
-    # Получение абсолютного пути к основному скрипту и скрипту остановки
-    local absolute_homedir_path
-    absolute_homedir_path="$(realpath "$HOME_DIR_PATH")"
-    local absolute_main_script_path
-    absolute_main_script_path="$(realpath "$MAIN_SCRIPT_PATH")"
-    local absolute_stop_script_path
-    absolute_stop_script_path="$(realpath "$STOP_SCRIPT")"
-    
-    echo "Создание systemd сервиса для автозагрузки..."
-    sudo bash -c "cat > $SERVICE_FILE" <<EOF
-[Unit]
-Description=Custom Script Service
-After=network-online.target
-Wants=network-online.target
+INIT_SYS=$(detect_init_system)
+INIT_SCRIPT="$BACKENDS_DIR/${INIT_SYS}.sh"
 
-[Service]
-Type=simple
-WorkingDirectory=$absolute_homedir_path
-User=root
-ExecStart=/usr/bin/env bash $absolute_main_script_path -nointeractive
-ExecStop=/usr/bin/env bash $absolute_stop_script_path
-ExecStopPost=/usr/bin/env echo "Сервис завершён"
-PIDFile=/run/$SERVICE_NAME.pid
-
-[Install]
-WantedBy=multi-user.target
-EOF
-    sudo systemctl daemon-reload
-    sudo systemctl enable "$SERVICE_NAME"
-    sudo systemctl start "$SERVICE_NAME"
-    echo "Сервис успешно установлен и запущен."
-}
-
-# Функция для удаления сервиса
-remove_service() {
-    echo "Удаление сервиса..."
-    sudo systemctl stop "$SERVICE_NAME"
-    sudo systemctl disable "$SERVICE_NAME"
-    sudo rm -f "$SERVICE_FILE"
-    sudo systemctl daemon-reload
-    echo "Сервис удален."
-}
-
-# Функция для запуска сервиса
-start_service() {
-    echo "Запуск сервиса..."
-    sudo systemctl start "$SERVICE_NAME"
-    echo "Сервис запущен."
-    sleep 3
-    check_nfqws_status
-}
-
-# Функция для остановки сервиса
-stop_service() {
-    echo "Остановка сервиса..."
-    sudo systemctl stop "$SERVICE_NAME"
-    echo "Сервис остановлен."
-    # Вызов скрипта для остановки и очистки nftables
-    $STOP_SCRIPT
-}
-
-# Функция для перезапуска сервиса
-restart_service() {
-    echo "Рестарт сервиса..."
-    stop_service
-    sleep 1
-    start_service
-}
+if [[ -f "$INIT_SCRIPT" ]]; then
+    echo "Обнаружена система: $INIT_SYS. Подключаем $INIT_SCRIPT"
+    source "$INIT_SCRIPT"
+else
+    echo "Ошибка: Не найден скрипт для системы $INIT_SYS ($INIT_SCRIPT)"
+    exit 1
+fi
 
 # Основное меню управления
 show_menu() {
