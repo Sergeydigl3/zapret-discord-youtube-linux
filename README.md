@@ -13,7 +13,9 @@
 
 **Проверено на:**  
 - Ubuntu 24.04
+- Debian 12
 - Arch Linux
+- Gentoo Linux
 
 ---
 
@@ -119,19 +121,32 @@ sudo bash service.sh
   gamefilter=
   ```
   ), то предложит интерактивно выбрать параметры (интерфейс, стратегию из bat-файлов и gamefilter).
-- Создаёт systemd-сервис для автозапуска.
+- Создаёт сервис для автозапуска.
 
 Просмотреть статус сервиса можно командой:
 
+Для systemd систем
 ```bash
 systemctl status zapret_discord_youtube.service
 ```
 
+Для OpenRC систем
+```bash
+rc-service zapret_discord_youtube status
+```
+
 Посмотреть логи сервиса:
 
+Для systemd систем
 ```bash
 journalctl -u zapret_discord_youtube.service
 ```
+
+Для OpenRC систем
+```bash
+rc-service zapret_discord_youtube logs
+```
+
 
 Значения для автозагрузки берутся из файла `conf.env`.
 
