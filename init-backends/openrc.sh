@@ -3,6 +3,7 @@
 # Константы
 SERVICE_NAME="zapret_discord_youtube"
 SERVICE_FILE="/etc/init.d/$SERVICE_NAME"
+LOG_FILE="/var/log/zapret_discord_youtube.log"
 
 # Функция для проверки статуса сервиса
 check_service_status() {
@@ -18,6 +19,25 @@ check_service_status() {
         echo "Статус: Сервис установлен, но не активен."
         return 3
     fi
+}
+
+create_logrotate_conf() {
+    sudo mkdir -p /etc/logrotate.d
+
+    sudo bash -c "cat > /etc/logrotate.d/zapret_discord_youtube" <<EOF
+/var/log/zapret_discord_youtube.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 root root
+    copytruncate
+}
+EOF
+
+sudo chmod 0644 /etc/logrotate.d/zapret_discord_youtube
 }
 
 # Функция для установки сервиса
@@ -62,13 +82,30 @@ command_args="$MAIN_SCRIPT -nointeractive"
 command_background="yes"
 pidfile="/run/zapret_discord_youtube.pid"
 directory="$HOMEDIR"
-# command_user="root:root"
-kill_mode="mixed" 
+kill_mode="mixed"
+extra_commands="logs"
+
+output_log="$LOG_FILE"
+error_log="$LOG_FILE"
 
 depend() {
     need net
     after firewall
-    # use net.eth0
+}
+
+start_pre() {
+    if [ -z "$LOG_FILE" ]; then
+        eerror "LOG_FILE не задан!"
+        return 1
+    fi
+
+    touch "$LOG_FILE" 2>/dev/null || true
+
+    if [ ! -f "$LOG_FILE" ] || [ ! -w "$LOG_FILE" ]; then
+        ewarn "Не удалось создать/записать в лог-файл: $LOG_FILE"
+    fi
+
+    return 0
 }
 
 post_stop() {
@@ -77,7 +114,17 @@ post_stop() {
         "$STOP_SCRIPT"
     fi
 }
+
+logs() {
+    if [ ! -f "$LOG_FILE" ]; then
+        eerror "Файл лога $LOG_FILE не найден."
+        return 1
+    fi
+    
+    tail -n 30 "$LOG_FILE"
+}
 EOF
+    create_logrotate_conf
     sudo chmod +x "$SERVICE_FILE"
     sudo rc-update add "$SERVICE_NAME" default
     sudo rc-service "$SERVICE_NAME" restart
