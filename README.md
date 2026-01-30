@@ -63,6 +63,24 @@
    ls /sys/class/net
    ```
 
+4. **Управление через CLI:**
+
+   Скрипт `service.sh` также поддерживает командный интерфейс (CLI) для управления сервисом и конфигурацией. Список всех комманд доступен по `bash ./service.sh --help`.
+   
+   Примеры изменения конфигурации:
+   
+   ```bash
+   bash ./service.sh general.bat enp0s3
+   # strategy=general.bat
+   # gamefilter=false
+   # interface=enp0s3
+   
+   bash ./service.sh --gamefilter alt11
+   # interface=any
+   # gamefilter=true
+   # strategy=general_alt11.bat
+   ```
+
 ---
 
 # Автоматический подбор стратегий для YouTube
