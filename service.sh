@@ -218,6 +218,7 @@ stop_service() {
 
 # Функция для перезапуска сервиса
 restart_service() {
+    echo "Рестарт сервиса..."
     stop_service
     sleep 1
     start_service
@@ -268,9 +269,212 @@ show_menu() {
   esac
 }
 
-# Запуск меню
-show_menu
+# Запуск интерактивного меню
+run_interactive() {
+    show_menu
+    echo ""
+    read -p "Нажмите Enter для выхода..."
+}
 
-# Пауза перед выходом
-echo ""
-read -p "Нажмите Enter для выхода..."
+# Функция для получения доступных стратегий
+strategies() {
+    find "$(dirname "$0")/zapret-latest" $CUSTOM_STRATEGIES_DIR \
+        -name "general*" -type f -printf "%f\n" 2>/dev/null | sort -u
+}
+
+# Функция для валидации и нормализации названия стратегии
+# Возвращает 1, если не удалось валидировать название стратегии
+#
+# Примеры:
+#   "general" -> echo "general.bat"
+#   "alt11" -> echo "general_alt11.bat"
+#   "not-a-strategy" -> return 1
+normalize_strategy() {
+    local s="$1"
+
+    # Поиск совпадения с совпадением регистра
+    local exact_match
+    exact_match=$(strategies | grep -E "^(${s}|${s}\\.bat|general_${s}|general_${s}\\.bat)$")
+
+    if [ -n "$exact_match" ]; then
+        echo "$exact_match"
+        return 0
+    fi
+
+    # Регистронезависимый поиск
+    local case_insensitive_match
+    case_insensitive_match=$(strategies | grep -i -E "^(${s}|${s}\\.bat|general_${s}|general_${s}\\.bat)$" | head -n1)
+
+    if [ -n "$case_insensitive_match" ]; then
+        echo "$case_insensitive_match"
+        return 0
+    fi
+
+    return 1
+}
+
+# Функция для вывода доступных стратегий
+show_strategies() {
+    echo "Доступные стратегии:"
+    echo
+    strategies
+}
+
+# Функция для вывода текущей конфигурации
+show_config() {
+    if [ -f "$CONF_FILE" ]; then
+        echo "Текущая конфигурация:"
+        echo
+        cat "$CONF_FILE"
+        echo
+    else
+        echo "Файл конфигурации отсутствует"
+    fi
+}
+
+# Функция для обновления конфигурации с рестартом сервиса.
+update_config() {
+    local strategy="$1"
+    local interface="${2:-any}"
+    local gamefilter="$3"
+
+    # Валидация и нормализация названия стратегии
+    local normalized_strategy
+    if ! normalized_strategy=$(normalize_strategy "$strategy"); then
+        echo "Несуществующая стратегия!"
+        show_strategies
+        exit 1
+    fi
+
+    if [[ "$interface" != "any" ]]; then
+        interface_match=$(ls /sys/class/net | grep -E "^${interface}$")
+        if [ ! -n "$interface_match" ]; then
+            echo "Несуществующий интерфейс!"
+            local interfaces=("any" $(ls /sys/class/net))
+            echo "Доступные интерфейсы: ${interfaces[@]}"
+            exit 1
+        fi
+    fi
+
+    # TODO: Check interface.
+
+    cat > "$CONF_FILE" << ENV
+interface=${interface}
+gamefilter=${gamefilter}
+strategy=${normalized_strategy}
+ENV
+
+    echo "Конфигурация обновлена."
+    show_config
+
+    if [ "$RESTART_SERVICE" = true ]; then
+        restart_service
+    fi
+}
+
+# Помощь
+show_usage() {
+    echo "Usage:"
+    echo "    $(basename "$0")         Run interactive service manager"
+    echo
+    echo "Commands:"
+    echo "       --status        Show service status"
+    echo "    -i --install       Install and start service"
+    echo "    -R --remove        Remove service"
+    echo "    -s --start         Start service"
+    echo "    -S --stop          Stop service"
+    echo "    -r --restart       Just restart the service"
+    echo "    -l --strategies    List available strategies"
+    echo "    -c --config        Show current config"
+    echo "    -h --help          Show this help"
+    echo
+    echo "Update configuration:"
+    echo "    $(basename "$0") [options] <STRATEGY> [INTERFACE]"
+    echo
+    echo "Options:"
+    echo "    -g --gamefilter      Enable gamefilter"
+    echo "    -n --norestart       Do not restart the service"
+}
+
+# Парсинг флагов
+GAMEFILTER=false
+RESTART_SERVICE=true
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --status) check_service_status
+            exit 0
+            ;;
+        -i|--install)
+            install_service
+            exit 0
+            ;;
+        -R|--remove)
+            remove_service
+            exit 0
+            ;;
+        -s|--start)
+            start_service
+            exit 0
+            ;;
+        -S|--stop)
+            stop_service
+            exit 0
+            ;;
+        -r|--restart)
+            restart_service
+            exit 0
+            ;;
+        -l|--strategies)
+            show_strategies
+            exit 0
+            ;;
+        -c|--config)
+            show_config
+            exit 0
+            ;;
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+        -g|--gamefilter)
+            GAMEFILTER=true
+            shift
+            ;;
+        -n|--norestart)
+            RESTART_SERVICE=false
+            shift
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -*)
+            echo "Unknown option: $1"
+            show_usage
+            exit 1
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+# Парсинг аргументов
+case $# in
+    0)
+        # Run original interactive service manager
+        run_interactive
+        ;;
+    1)
+        update_config "$1" "any" "$GAMEFILTER"
+        ;;
+    2)
+        update_config "$1" "$2" "$GAMEFILTER"
+        ;;
+    *)
+        echo "Wrong arguments!"
+        echo "Run '$(basename "$0") -h' for help"
+        exit 1
+        ;;
+esac
