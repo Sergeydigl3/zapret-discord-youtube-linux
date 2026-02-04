@@ -1,5 +1,6 @@
-# Stable4
-Я захардкодил последний рабочий конфиг от Flowseal на [этом коммите](https://github.com/Flowseal/zapret-discord-youtube/commit/e1322fd3afe57ca14f4d79b7ac5f92e4513cd0f3).
+Я захардкодил последний рабочий конфиг от Flowseal на [этом коммите](https://github.com/Flowseal/zapret-discord-youtube/commit/533edcaf2f55a8af8f6b336087719a7498415a55).
+
+Если текущая версия не работает, вы можете попробовать скачать прошлые [стабильные релизы](https://github.com/Sergeydigl3/zapret-discord-youtube-linux/releases).
 
 Обновляю скрипт редко, для поддержания работоспособности относительно версии для Win. То бишь, пока не происходит массовых отказов всех стратегий.
 
