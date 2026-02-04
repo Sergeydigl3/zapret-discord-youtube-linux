@@ -7,7 +7,7 @@ DINIT_SERVICE_PATH="$(dirname "$0")/inits/dinit.sh"
 SYSTEMD_SERVICE_PATH="$(dirname "$0")/inits/systemd.sh"
 
 if [ ! -z $(echo "$INIT" | grep "systemd") ]; then
-	echo systemd
+	$SYSTEMD_SERVICE_PATH
 elif [ ! -z $(echo "$INIT" | grep "dinit") ]; then
 	$DINIT_SERVICE_PATH
 fi
