@@ -2,7 +2,7 @@
 
 # Константы
 SERVICE_NAME="zapret_discord_youtube"
-SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+SERVICE_FILE="/etc/dinit.d/$SERVICE_NAME"
 HOME_DIR_PATH="$(dirname "$0")"
 MAIN_SCRIPT_PATH="$(dirname "$0")/../main_script.sh"   # Путь к основному скрипту
 CONF_FILE="$(dirname "$0")/../conf.env"                # Путь к файлу конфигурации
@@ -102,9 +102,12 @@ edit_conf_file() {
   echo "Изменение конфигурации..."
   create_conf_file
   echo "Конфигурация обновлена."
+  
+  # Проверка статуса способом динита
+  SERVICE_STATUS=$(sudo dinitctl is-started "$SERVICE_NAME")
 
   # Если сервис активен, предлагаем перезапустить
-  if systemctl is-active --quiet "$SERVICE_NAME"; then
+  if [ ! -z "$SERVICE_STATUS" ]; then
     read -p "Сервис активен. Перезапустить сервис для применения новых настроек? (Y/n): " answer
     if [[ ${answer:-Y} =~ ^[Yy]$ ]]; then
       restart_service
@@ -123,12 +126,14 @@ check_nfqws_status() {
 
 # Функция для проверки статуса сервиса
 check_service_status() {
-    if ! systemctl list-unit-files | grep -q "$SERVICE_NAME.service"; then
+    SERVICE_EXISTS=$(ls /etc/dinit.d | grep $SERVICE_NAME)
+    SERVICE_STATUS=$(sudo dinitctl is-started "$SERVICE_NAME")
+    if [ -z "$SERVICE_EXISTS" ]; then
         echo "Статус: Сервис не установлен."
         return 1
     fi
     
-    if systemctl is-active --quiet "$SERVICE_NAME"; then
+    if [ ! -z "$SERVICE_STATUS" ]; then
         echo "Статус: Сервис установлен и активен."
         return 2
     else
@@ -163,45 +168,29 @@ install_service() {
     local absolute_stop_script_path
     absolute_stop_script_path="$(realpath "$STOP_SCRIPT")"
     
-    echo "Создание systemd сервиса для автозагрузки..."
+    echo "Создание dinit сервиса для автозагрузки..."
     sudo bash -c "cat > $SERVICE_FILE" <<EOF
-[Unit]
-Description=Custom Script Service
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-WorkingDirectory=$absolute_homedir_path
-User=root
-ExecStart=/usr/bin/env bash $absolute_main_script_path -nointeractive
-ExecStop=/usr/bin/env bash $absolute_stop_script_path
-ExecStopPost=/usr/bin/env echo "Сервис завершён"
-PIDFile=/run/$SERVICE_NAME.pid
-
-[Install]
-WantedBy=multi-user.target
+type = process
+command = /usr/bin/bash /home/praef/zapret-discord-youtube-linux/main_script.sh -nointeractive
+stop-command = /usr/bin/bash /home/praef/zapret-discord-youtube-linux/stop_and_clean_nft.sh
 EOF
-    sudo systemctl daemon-reload
-    sudo systemctl enable "$SERVICE_NAME"
-    sudo systemctl start "$SERVICE_NAME"
+    sudo dinitctl enable "$SERVICE_NAME"
     echo "Сервис успешно установлен и запущен."
 }
 
 # Функция для удаления сервиса
 remove_service() {
     echo "Удаление сервиса..."
-    sudo systemctl stop "$SERVICE_NAME"
-    sudo systemctl disable "$SERVICE_NAME"
+    sudo dinitctl stop "$SERVICE_NAME"
+    sudo dinitctl disable "$SERVICE_NAME"
     sudo rm -f "$SERVICE_FILE"
-    sudo systemctl daemon-reload
     echo "Сервис удален."
 }
 
 # Функция для запуска сервиса
 start_service() {
     echo "Запуск сервиса..."
-    sudo systemctl start "$SERVICE_NAME"
+    sudo dinitctl start "$SERVICE_NAME"
     echo "Сервис запущен."
     sleep 3
     check_nfqws_status
@@ -210,7 +199,7 @@ start_service() {
 # Функция для остановки сервиса
 stop_service() {
     echo "Остановка сервиса..."
-    sudo systemctl stop "$SERVICE_NAME"
+    sudo dinitctl stop "$SERVICE_NAME"
     echo "Сервис остановлен."
     # Вызов скрипта для остановки и очистки nftables
     $STOP_SCRIPT
