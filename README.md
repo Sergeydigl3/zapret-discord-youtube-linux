@@ -1,4 +1,4 @@
-Я захардкодил последний рабочий конфиг от Flowseal на [этом коммите](https://github.com/Flowseal/zapret-discord-youtube/commit/533edcaf2f55a8af8f6b336087719a7498415a55).
+Я захардкодил последний рабочий конфиг от Flowseal на [этом коммите](https://github.com/Flowseal/zapret-discord-youtube/commit/7e723f0a3f7185af1425b93938a56401a1e6b286).
 
 Если текущая версия не работает, вы можете попробовать скачать прошлые [стабильные релизы](https://github.com/Sergeydigl3/zapret-discord-youtube-linux/releases).
 
