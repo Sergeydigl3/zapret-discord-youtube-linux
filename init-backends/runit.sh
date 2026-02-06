@@ -3,7 +3,7 @@
 # Константы
 SERVICE_NAME="zapret_discord_youtube"
 SERVICE_DIR="/etc/sv/$SERVICE_NAME"
-SCAN_DIR="$(ps aux | grep 'runsvdir' | grep -oP '(?<=-P )[^ ]+')"
+SCAN_DIR="$(ps aux | grep 'runsvdir' | grep -oP '\-P \K\S+')"
 
 # Функция проверки статуса сервиса
 check_service_status() {

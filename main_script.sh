@@ -10,7 +10,7 @@ REPO_URL="https://github.com/Flowseal/zapret-discord-youtube"
 NFQWS_PATH="$BASE_DIR/nfqws"
 CONF_FILE="$BASE_DIR/conf.env"
 STOP_SCRIPT="$BASE_DIR/stop_and_clean_nft.sh"
-MAIN_REPO_REV="e1322fd3afe57ca14f4d79b7ac5f92e4513cd0f3"
+MAIN_REPO_REV="7e723f0a3f7185af1425b93938a56401a1e6b286"
 
 # Флаг отладки
 DEBUG=false
@@ -23,7 +23,6 @@ USE_GAME_FILTER=false
 _term() {
     sudo /usr/bin/env bash $STOP_SCRIPT
 }
-_term
 
 # Функция для логирования
 log() {
@@ -58,10 +57,10 @@ load_config() {
     if [ ! -f "$CONF_FILE" ]; then
         handle_error "Файл конфигурации $CONF_FILE не найден"
     fi
-    
+
     # Чтение переменных из конфигурационного файла
     source "$CONF_FILE"
-    
+
     # Проверка обязательных переменных
     if [ -z "$interface" ] || [ -z "$gamefilter" ] || [ -z "$strategy" ]; then
         handle_error "Отсутствуют обязательные параметры в конфигурационном файле"
@@ -99,7 +98,7 @@ select_strategy() {
     fi
 
     cd "$REPO_DIR" || handle_error "Не удалось перейти в директорию $REPO_DIR"
-    
+
     if $NOINTERACTIVE; then
         if [ ! -f "$strategy" ] && [ ! -f "../$CUSTOM_DIR/$strategy" ]; then
             handle_error "Указанный .bat файл стратегии $strategy не найден"
@@ -109,14 +108,14 @@ select_strategy() {
         cd ..
         return
     fi
-    
+
     # Собираем стандартные файлы
     local IFS=$'\n'
     local repo_files=($(find_bat_files "general*.bat" | xargs -0 -n1 echo) $(find_bat_files "discord.bat" | xargs -0 -n1 echo))
-    
+
     # Объединяем списки (кастомные будут первыми)
     local bat_files=("${custom_files[@]}" "${repo_files[@]}")
-    
+
     if [ ${#bat_files[@]} -eq 0 ]; then
         cd ..
         handle_error "Не найдены подходящие .bat файлы"
@@ -126,7 +125,7 @@ select_strategy() {
     select strategy in "${bat_files[@]}"; do
         if [ -n "$strategy" ]; then
             log "Выбрана стратегия: $strategy"
-            
+
             # Определяем полный путь для парсера перед выходом из папки
             local final_path=""
             if [ -f "$strategy" ]; then
@@ -134,7 +133,7 @@ select_strategy() {
             else
                 final_path="$REPO_DIR/../$CUSTOM_DIR/$strategy"
             fi
-            
+
             cd ..
             parse_bat_file "$final_path"
             break
@@ -151,13 +150,13 @@ parse_bat_file() {
 
     # Читаем весь файл целиком
     local content=$(cat "$file" | tr -d '\r')
-    
+
     debug_log "File content loaded"
 
     # Заменяем переменные
     content="${content//%BIN%/$bin_path}"
     content="${content//%LISTS%/lists/}"
-    
+
     # Обрабатываем GameFilter
     if [ "$USE_GAME_FILTER" = true ]; then
         content="${content//%GameFilter%/$GAME_FILTER_PORTS}"
@@ -169,18 +168,18 @@ parse_bat_file() {
     # Ищем --wf-tcp и --wf-udp
     local wf_tcp_count=$(echo "$content" | grep -oP -- '--wf-tcp=' | wc -l)
     local wf_udp_count=$(echo "$content" | grep -oP -- '--wf-udp=' | wc -l)
-    
+
     # Проверяем количество вхождений
     if [ "$wf_tcp_count" -eq 0 ] || [ "$wf_udp_count" -eq 0 ]; then
         echo "ERROR: --wf-tcp or --wf-udp not found in $file"
         exit 1
     fi
-    
+
     if [ "$wf_tcp_count" -gt 1 ]; then
         echo "ERROR: Multiple --wf-tcp entries found in $file (found: $wf_tcp_count)"
         exit 1
     fi
-    
+
     if [ "$wf_udp_count" -gt 1 ]; then
         echo "ERROR: Multiple --wf-udp entries found in $file (found: $wf_udp_count)"
         exit 1
@@ -189,7 +188,7 @@ parse_bat_file() {
     # Извлекаем порты
     tcp_ports=$(echo "$content" | grep -oP -- '--wf-tcp=\K[0-9,-]+' | head -n1)
     udp_ports=$(echo "$content" | grep -oP -- '--wf-udp=\K[0-9,-]+' | head -n1)
-    
+
     debug_log "TCP ports: $tcp_ports"
     debug_log "UDP ports: $udp_ports"
 
@@ -199,14 +198,14 @@ parse_bat_file() {
             local protocol="${BASH_REMATCH[1]}"
             local ports="${BASH_REMATCH[2]}"
             local nfqws_args="${BASH_REMATCH[3]}"
-            
+
             # Удаляем --new в конце если есть
             # nfqws_args="${nfqws_args%% --new*}"
-            
+
             # Очищаем лишние пробелы
             nfqws_args=$(echo "$match" | xargs)
             nfqws_args="${nfqws_args//=^!/=!}"
-            
+
             nfqws_params+=("$nfqws_args")
             debug_log "Matched protocol: $protocol, ports: $ports"
             debug_log "NFQWS parameters: $nfqws_args"
@@ -221,20 +220,20 @@ setup_nftables() {
     local chain_name="output"
     local rule_comment="Added by zapret script"
     local queue_num=220
-    
+
     log "Настройка nftables с очисткой только помеченных правил..."
-    
+
     # Удаляем существующую таблицу, если она была создана этим скриптом
     if sudo nft list tables | grep -q "$table_name"; then
         sudo nft flush chain $table_name $chain_name
         sudo nft delete chain $table_name $chain_name
         sudo nft delete table $table_name
     fi
-    
+
     # Добавляем таблицу и цепочку
     sudo nft add table $table_name
     sudo nft add chain $table_name $chain_name { type filter hook output priority 0\; }
-    
+
     local oif_clause=""
     if [ -n "$interface" ] && [ "$interface" != "any" ]; then
         oif_clause="oifname \"$interface\""
@@ -243,14 +242,14 @@ setup_nftables() {
     # Добавляем правило для TCP портов (если есть)
     if [ -n "$tcp_ports" ]; then
         sudo nft add rule $table_name $chain_name $oif_clause meta mark != 0x40000000 tcp dport {$tcp_ports} counter queue num $queue_num bypass comment \"$rule_comment\" ||
-        handle_error "Ошибка при добавлении TCP правила nftables"
+            handle_error "Ошибка при добавлении TCP правила nftables"
         log "Добавлено TCP правило для портов: $tcp_ports -> queue $queue_num"
     fi
-    
+
     # Добавляем правило для UDP портов (если есть)
     if [ -n "$udp_ports" ]; then
         sudo nft add rule $table_name $chain_name $oif_clause meta mark != 0x40000000 udp dport {$udp_ports} counter queue num $queue_num bypass comment \"$rule_comment\" ||
-        handle_error "Ошибка при добавлении UDP правила nftables"
+            handle_error "Ошибка при добавлении UDP правила nftables"
         log "Добавлено UDP правило для портов: $udp_ports -> queue $queue_num"
     fi
 }
@@ -260,41 +259,44 @@ start_nfqws() {
     log "Запуск процесса nfqws..."
     sudo pkill -f nfqws
     cd "$REPO_DIR" || handle_error "Не удалось перейти в директорию $REPO_DIR"
-    
+
     local full_params=""
     for params in "${nfqws_params[@]}"; do
         full_params="$full_params $params"
     done
-    
+
     debug_log "Запуск nfqws с параметрами: $NFQWS_PATH --daemon --dpi-desync-fwmark=0x40000000 --qnum=220 $full_params"
     eval "sudo $NFQWS_PATH --daemon --dpi-desync-fwmark=0x40000000 --qnum=220 $full_params" ||
-    handle_error "Ошибка при запуске nfqws"
+        handle_error "Ошибка при запуске nfqws"
 }
 
 # Основная функция
 main() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            -debug)
-                DEBUG=true
-                shift
-                ;;
-            -nointeractive)
-                NOINTERACTIVE=true
-                shift
-                load_config
-                ;;
-            *)
-                break
-                ;;
+        -debug)
+            DEBUG=true
+            shift
+            ;;
+        -nointeractive)
+            NOINTERACTIVE=true
+            shift
+            load_config
+            ;;
+        *)
+            break
+            ;;
         esac
     done
-    
+
     check_dependencies
     setup_repository
-    
+
     # Включение GameFilter
     if $NOINTERACTIVE; then
+        _term
+        sleep 1
+
         if [ "$gamefilter" == "true" ]; then
             USE_GAME_FILTER=true
             log "GameFilter включен"
@@ -335,17 +337,20 @@ main() {
     fi
     start_nfqws
     log "Настройка успешно завершена"
-    
+
     # Пауза перед выходом
     if ! $NOINTERACTIVE; then
         echo "Нажмите Ctrl+C для завершения..."
     fi
 }
 
-# Запуск скрипта
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    _term
+    # Запуск скрипта
+    main "$@"
 
-trap _term SIGINT
+    trap _term SIGINT
 
-sleep infinity &
-wait
+    sleep infinity &
+    wait
+fi
