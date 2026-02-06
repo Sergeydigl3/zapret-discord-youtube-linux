@@ -51,6 +51,8 @@ create_conf_file() {
     fi
 
     # 3. Выбор стратегии
+    source ./main_script.sh
+    setup_repository
     local strategy_choice=""
     local repo_dir="$HOME_DIR_PATH/zapret-latest"
 

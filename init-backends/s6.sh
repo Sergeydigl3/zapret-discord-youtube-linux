@@ -2,7 +2,7 @@
 
 # Константы
 SERVICE_NAME="zapret_discord_youtube"
-SCAN_DIR="/run/service/"
+SCAN_DIR="$(ps aux | grep 's6-svscan' | grep -oP 'X3 -- \K\S+')"
 SERVICE_DIR="$SCAN_DIR/$SERVICE_NAME"
 LOG_DIR="/var/log/$SERVICE_NAME"
 
@@ -50,10 +50,7 @@ exec s6-log n20 s1000000 "$LOG_DIR"
 EOF
 
     sudo chmod +x "$SERVICE_DIR/run" "$SERVICE_DIR/finish" "$SERVICE_DIR/log/run"
-
-    echo "Оповещение s6-svscan о новой директории..."
     sudo s6-svscanctl -a "$SCAN_DIR"
-
     echo "Сервис установлен и должен запуститься автоматически."
 }
 
