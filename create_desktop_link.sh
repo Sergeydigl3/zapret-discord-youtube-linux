@@ -1,33 +1,27 @@
 #!/bin/bash
 
-# 1. Сбор данных с проверкой на непустоту
-echo -n "GameFilter по умолчанию [y/N]? "
-read game_mode_yn
-game_mode_yn=${game_mode_yn:-n} # Умолчание: n
+source ./service.sh
 
-# Цикл для обязательного ввода стратегии
-while [[ -z "$default_mode" ]]; do
-    echo -n "Введите стратегию по умолчанию (обязательно): "
-    read default_mode
-    [[ -z "$default_mode" ]] && echo "Ошибка: поле не может быть пустым."
-done
-
-# Цикл для обязательного ввода интерфейса
-while [[ -z "$default_interface" ]]; do
-    echo -n "Введите интерфейс по умолчанию (обязательно): "
-    read default_interface
-    [[ -z "$default_interface" ]] && echo "Ошибка: поле не может быть пустым."
-done
-
-SCRIPT_DIR=$(pwd)
+SCRIPT_DIR="$(pwd)"
+CONF_FILE="$SCRIPT_DIR/conf.env"
 MAIN_SCRIPT_PATH="$SCRIPT_DIR/main_script.sh"
+
+if [ ! -f "$CONF_FILE" ]; then
+    create_conf_file
+else
+    read -p "Найден файл конфигурации, необходимо ли его редактирование? [Y/n]: " whether_edit_conf
+
+    if [[ ${whether_edit_conf:-Y} =~ ^[Yy]$ ]]; then
+        edit_conf_file
+    fi
+fi
 
 # 2. Создание .desktop файла
 cat <<EOF > zapret.desktop
 [Desktop Entry]
 Name=Zapret Auto
 Comment=Run script with auto-input
-Exec=bash -c 'printf "$game_mode_yn\n$default_mode\n$default_interface\n" | sudo "$MAIN_SCRIPT_PATH"; exec bash'
+Exec=bash -c 'sudo "$MAIN_SCRIPT_PATH" -nointeractive; exec bash'
 Icon=utilities-terminal
 Terminal=true
 Type=Application
@@ -38,12 +32,12 @@ chmod +x zapret.desktop
 echo -e "\n[✔] Ярлык создан: $SCRIPT_DIR/zapret.desktop"
 
 # 3. Настройка sudoers.d
-echo -e "\nСоздать файл в /etc/sudoers.d/? (позволит запускать через ярлык без ввода пароля) [y/N]"
+echo -e "\nСоздать файл в /etc/sudoers.d/ для запуска программы из ярлыка без ввода пароля (потенциально небезопасно)? [y/N]:"
 read whether_add_to_sudoers
 whether_add_to_sudoers=${whether_add_to_sudoers:-n} # Умолчание: n
 
 if [[ "$whether_add_to_sudoers" =~ ^[Yy]$ ]]; then
-    # Определяем имя пользователя (logname надежнее внутри sudo)
+    # Определяем имя пользователя (logname для исключения ошибок при работе от root'а)
     USER_NAME=$(logname 2>/dev/null || echo $USER)
     SUDOERS_CONF="/etc/sudoers.d/zapret-shortcut"
 
