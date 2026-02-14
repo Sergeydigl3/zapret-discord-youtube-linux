@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
 
-# Константы
-TABLE_NAME="inet zapretunix"
-CHAIN_NAME="output"
-RULE_COMMENT="Added by zapret script"
+# Определяем BASE_DIR
+BASE_DIR="$(realpath "$(dirname "$0")")"
 
-# Функция для логирования
-log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
-}
+# Подключаем общие библиотеки
+source "$BASE_DIR/lib/constants.sh"
+source "$BASE_DIR/lib/common.sh"
 
 # Остановка процессов nfqws
 stop_nfqws_processes() {
@@ -19,29 +16,29 @@ stop_nfqws_processes() {
 # Очистка помеченных правил nftables
 clear_firewall_rules() {
     log "Очистка правил nftables, добавленных скриптом..."
-    
+
     # Проверка на существование таблицы и цепочки
-    if sudo nft list tables | grep -q "$TABLE_NAME"; then
-        if sudo nft list chain $TABLE_NAME $CHAIN_NAME >/dev/null 2>&1; then
+    if sudo nft list tables | grep -q "$NFT_TABLE"; then
+        if sudo nft list chain $NFT_TABLE $NFT_CHAIN >/dev/null 2>&1; then
             # Получаем все handle значений правил с меткой, добавленных скриптом
-            handles=$(sudo nft -a list chain $TABLE_NAME $CHAIN_NAME | grep "$RULE_COMMENT" | awk '{print $NF}')
-            
+            handles=$(sudo nft -a list chain $NFT_TABLE $NFT_CHAIN | grep "$NFT_RULE_COMMENT" | awk '{print $NF}')
+
             # Удаление каждого правила по handle значению
             for handle in $handles; do
-                sudo nft delete rule $TABLE_NAME $CHAIN_NAME handle $handle ||
+                sudo nft delete rule $NFT_TABLE $NFT_CHAIN handle $handle ||
                 log "Не удалось удалить правило с handle $handle"
             done
-            
+
             # Удаление цепочки и таблицы, если они пусты
-            sudo nft delete chain $TABLE_NAME $CHAIN_NAME
-            sudo nft delete table $TABLE_NAME
-            
+            sudo nft delete chain $NFT_TABLE $NFT_CHAIN
+            sudo nft delete table $NFT_TABLE
+
             log "Очистка завершена."
         else
-            log "Цепочка $CHAIN_NAME не найдена в таблице $TABLE_NAME."
+            log "Цепочка $NFT_CHAIN не найдена в таблице $NFT_TABLE."
         fi
     else
-        log "Таблица $TABLE_NAME не найдена. Нечего очищать."
+        log "Таблица $NFT_TABLE не найдена. Нечего очищать."
     fi
 }
 

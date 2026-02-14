@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-# Константы
-SERVICE_NAME="zapret_discord_youtube"
+# SERVICE_NAME берётся из lib/constants.sh (подключается в service.sh)
 SCAN_DIR="$(ps aux | grep 's6-svscan' | grep -oP 'X3 -- \K\S+')"
 SERVICE_DIR="$SCAN_DIR/$SERVICE_NAME"
 LOG_DIR="/var/log/$SERVICE_NAME"

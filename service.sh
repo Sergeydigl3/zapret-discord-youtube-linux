@@ -1,28 +1,16 @@
 #!/usr/bin/env bash
 
-# Константы
+# Константы путей
 HOME_DIR_PATH="$(dirname "$0")"
-MAIN_SCRIPT_PATH="$(dirname "$0")/main_script.sh"   # Путь к основному скрипту
-CONF_FILE="$(dirname "$0")/conf.env"                # Путь к файлу конфигурации
-STOP_SCRIPT="$(dirname "$0")/stop_and_clean_nft.sh" # Путь к скрипту остановки и очистки nftables
+MAIN_SCRIPT_PATH="$(dirname "$0")/main_script.sh"
+CONF_FILE="$(dirname "$0")/conf.env"
+STOP_SCRIPT="$(dirname "$0")/stop_and_clean_nft.sh"
 CUSTOM_STRATEGIES_DIR="$HOME_DIR_PATH/custom-strategies"
 BACKENDS_DIR="$HOME_DIR_PATH/init-backends"
 
-# Функция для проверки существования conf.env и обязательных непустых полей
-check_conf_file() {
-    if [[ ! -f "$CONF_FILE" ]]; then
-        return 1
-    fi
-
-    local required_fields=("interface" "gamefilter" "strategy")
-    for field in "${required_fields[@]}"; do
-        # Ищем строку вида field=Значение, где значение не пустое
-        if ! grep -q "^${field}=[^[:space:]]" "$CONF_FILE"; then
-            return 1
-        fi
-    done
-    return 0
-}
+# Подключаем общие библиотеки
+source "$HOME_DIR_PATH/lib/constants.sh"
+source "$HOME_DIR_PATH/lib/common.sh"
 
 # Функция для интерактивного создания файла конфигурации conf.env
 create_conf_file() {
@@ -109,15 +97,6 @@ edit_conf_file() {
         if [[ ${answer:-Y} =~ ^[Yy]$ ]]; then
             restart_service
         fi
-    fi
-}
-
-# Функция для проверки статуса процесса nfqws
-check_nfqws_status() {
-    if pgrep -f "nfqws" >/dev/null; then
-        echo "Демоны nfqws запущены."
-    else
-        echo "Демоны nfqws не запущены."
     fi
 }
 
@@ -244,12 +223,6 @@ strategies() {
 }
 
 # Функция для валидации и нормализации названия стратегии
-# Возвращает 1, если не удалось валидировать название стратегии
-#
-# Примеры:
-#   "general" -> echo "general.bat"
-#   "alt11" -> echo "general_alt11.bat"
-#   "not-a-strategy" -> return 1
 normalize_strategy() {
     local s="$1"
 
@@ -316,8 +289,6 @@ update_config() {
             exit 1
         fi
     fi
-
-    # TODO: Check interface.
 
     cat > "$CONF_FILE" << ENV
 interface=${interface}

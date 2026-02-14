@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-# Константы
-SERVICE_NAME="zapret_discord_youtube"
+# SERVICE_NAME берётся из lib/constants.sh (подключается в service.sh)
 SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
 
 # Функция для проверки статуса сервиса
@@ -10,7 +9,7 @@ check_service_status() {
         echo "Статус: Сервис не установлен."
         return 1
     fi
-    
+
     if systemctl is-active --quiet "$SERVICE_NAME"; then
         echo "Статус: Сервис установлен и активен."
         return 2
@@ -37,7 +36,7 @@ install_service() {
             return
         fi
     fi
-    
+
     # Получение абсолютного пути к основному скрипту и скрипту остановки
     local absolute_homedir_path
     absolute_homedir_path="$(realpath "$HOME_DIR_PATH")"
@@ -45,7 +44,7 @@ install_service() {
     absolute_main_script_path="$(realpath "$MAIN_SCRIPT_PATH")"
     local absolute_stop_script_path
     absolute_stop_script_path="$(realpath "$STOP_SCRIPT")"
-    
+
     echo "Создание systemd сервиса для автозагрузки..."
     sudo bash -c "cat > $SERVICE_FILE" <<EOF
 [Unit]

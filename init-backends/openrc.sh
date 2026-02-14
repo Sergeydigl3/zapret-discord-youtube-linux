@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
-# Константы
-SERVICE_NAME="zapret_discord_youtube"
+# SERVICE_NAME берётся из lib/constants.sh (подключается в service.sh)
 SERVICE_FILE="/etc/init.d/$SERVICE_NAME"
-LOG_FILE="/var/log/zapret_discord_youtube.log"
+LOG_FILE="/var/log/$SERVICE_NAME.log"
 
 # Функция для проверки статуса сервиса
 check_service_status() {
@@ -24,8 +23,8 @@ check_service_status() {
 create_logrotate_conf() {
     sudo mkdir -p /etc/logrotate.d
 
-    sudo bash -c "cat > /etc/logrotate.d/zapret_discord_youtube" <<EOF
-/var/log/zapret_discord_youtube.log {
+    sudo bash -c "cat > /etc/logrotate.d/$SERVICE_NAME" <<EOF
+/var/log/$SERVICE_NAME.log {
     daily
     rotate 7
     compress
@@ -37,7 +36,7 @@ create_logrotate_conf() {
 }
 EOF
 
-sudo chmod 0644 /etc/logrotate.d/zapret_discord_youtube
+sudo chmod 0644 /etc/logrotate.d/$SERVICE_NAME
 }
 
 # Функция для установки сервиса
@@ -57,7 +56,7 @@ install_service() {
             return
         fi
     fi
-    
+
     # Получение абсолютного пути к основному скрипту и скрипту остановки
     local absolute_homedir_path
     absolute_homedir_path="$(realpath "$HOME_DIR_PATH")"
@@ -65,23 +64,23 @@ install_service() {
     absolute_main_script_path="$(realpath "$MAIN_SCRIPT_PATH")"
     local absolute_stop_script_path
     absolute_stop_script_path="$(realpath "$STOP_SCRIPT")"
-    
+
     echo "Создание openrc сервиса для автозагрузки..."
     sudo bash -c "cat > $SERVICE_FILE" <<EOF
 #!/sbin/openrc-run
-# /etc/init.d/zapret_discord_youtube
+# /etc/init.d/$SERVICE_NAME
 
 description="Zapret bypass для Discord/YouTube (nfqws + nftables)"
 
- : "${HOMEDIR:=$absolute_homedir_path}"
- : "${MAIN_SCRIPT:=$HOMEDIR/main_script.sh}"
- : "${STOP_SCRIPT:=$HOMEDIR/stop_and_clean_nft.sh}"
+ : "\${HOMEDIR:=$absolute_homedir_path}"
+ : "\${MAIN_SCRIPT:=\$HOMEDIR/main_script.sh}"
+ : "\${STOP_SCRIPT:=\$HOMEDIR/stop_and_clean_nft.sh}"
 
 command="/bin/bash"
-command_args="$MAIN_SCRIPT -nointeractive"
+command_args="\$MAIN_SCRIPT -nointeractive"
 command_background="yes"
-pidfile="/run/zapret_discord_youtube.pid"
-directory="$HOMEDIR"
+pidfile="/run/$SERVICE_NAME.pid"
+directory="\$HOMEDIR"
 kill_mode="mixed"
 extra_commands="logs"
 
@@ -94,34 +93,34 @@ depend() {
 }
 
 start_pre() {
-    if [ -z "$LOG_FILE" ]; then
+    if [ -z "\$LOG_FILE" ]; then
         eerror "LOG_FILE не задан!"
         return 1
     fi
 
-    touch "$LOG_FILE" 2>/dev/null || true
+    touch "\$LOG_FILE" 2>/dev/null || true
 
-    if [ ! -f "$LOG_FILE" ] || [ ! -w "$LOG_FILE" ]; then
-        ewarn "Не удалось создать/записать в лог-файл: $LOG_FILE"
+    if [ ! -f "\$LOG_FILE" ] || [ ! -w "\$LOG_FILE" ]; then
+        ewarn "Не удалось создать/записать в лог-файл: \$LOG_FILE"
     fi
 
     return 0
 }
 
 post_stop() {
-    if [[ -x "$STOP_SCRIPT" ]]; then
+    if [[ -x "\$STOP_SCRIPT" ]]; then
         einfo "Выполняем очистку nftables..."
-        "$STOP_SCRIPT"
+        "\$STOP_SCRIPT"
     fi
 }
 
 logs() {
-    if [ ! -f "$LOG_FILE" ]; then
-        eerror "Файл лога $LOG_FILE не найден."
+    if [ ! -f "\$LOG_FILE" ]; then
+        eerror "Файл лога \$LOG_FILE не найден."
         return 1
     fi
-    
-    tail -n 30 "$LOG_FILE"
+
+    tail -n 30 "\$LOG_FILE"
 }
 EOF
     create_logrotate_conf
