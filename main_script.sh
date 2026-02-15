@@ -6,6 +6,7 @@ set -e
 BASE_DIR="$(realpath "$(dirname "$0")")"
 REPO_DIR="$BASE_DIR/zapret-latest"
 CUSTOM_DIR="./custom-strategies"
+CUSTOM_STRATEGIES_DIR="$BASE_DIR/custom-strategies"
 NFQWS_PATH="$BASE_DIR/nfqws"
 CONF_FILE="$BASE_DIR/conf.env"
 STOP_SCRIPT="$BASE_DIR/stop_and_clean_nft.sh"
@@ -21,21 +22,6 @@ USE_GAME_FILTER=false
 
 _term() {
     sudo /usr/bin/env bash $STOP_SCRIPT
-}
-
-# Функция для настройки репозитория
-setup_repository() {
-    if [ -d "$REPO_DIR" ]; then
-        log "Использование существующей версии репозитория."
-        return
-    else
-        log "Клонирование репозитория..."
-        git clone "$REPO_URL" "$REPO_DIR" || handle_error "Ошибка при клонировании репозитория"
-        cd "$REPO_DIR" && git checkout $MAIN_REPO_REV && cd ..
-        chmod +x "$BASE_DIR/rename_bat.sh"
-        rm -rf "$REPO_DIR/.git"
-        "$BASE_DIR/rename_bat.sh" || handle_error "Ошибка при переименовании файлов"
-    fi
 }
 
 # Функция для поиска bat файлов внутри репозитория
