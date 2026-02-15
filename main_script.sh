@@ -2,85 +2,26 @@
 
 set -e
 
-# Константы
+# Константы путей
 BASE_DIR="$(realpath "$(dirname "$0")")"
 REPO_DIR="$BASE_DIR/zapret-latest"
 CUSTOM_DIR="./custom-strategies"
-REPO_URL="https://github.com/Flowseal/zapret-discord-youtube"
+CUSTOM_STRATEGIES_DIR="$BASE_DIR/custom-strategies"
 NFQWS_PATH="$BASE_DIR/nfqws"
 CONF_FILE="$BASE_DIR/conf.env"
 STOP_SCRIPT="$BASE_DIR/stop_and_clean_nft.sh"
-MAIN_REPO_REV="7952e58ee8b068b731d55d2ef8f491fd621d6ff0"
 
-# Флаг отладки
+# Подключаем общие библиотеки
+source "$BASE_DIR/lib/constants.sh"
+source "$BASE_DIR/lib/common.sh"
+
+# Флаги
 DEBUG=false
 NOINTERACTIVE=false
-
-# GameFilter
-GAME_FILTER_PORTS="1024-65535"
 USE_GAME_FILTER=false
 
 _term() {
     sudo /usr/bin/env bash $STOP_SCRIPT
-}
-
-# Функция для логирования
-log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
-}
-
-# Функция отладочного логирования
-debug_log() {
-    if $DEBUG; then
-        echo "[DEBUG] $1"
-    fi
-}
-
-# Функция обработки ошибок
-handle_error() {
-    log "Ошибка: $1"
-    exit 1
-}
-
-# Функция для проверки наличия необходимых утилит
-check_dependencies() {
-    local deps=("git" "nft" "grep" "sed")
-    for dep in "${deps[@]}"; do
-        if ! command -v "$dep" >/dev/null 2>&1; then
-            handle_error "Не установлена утилита $dep"
-        fi
-    done
-}
-
-# Функция чтения конфигурационного файла
-load_config() {
-    if [ ! -f "$CONF_FILE" ]; then
-        handle_error "Файл конфигурации $CONF_FILE не найден"
-    fi
-
-    # Чтение переменных из конфигурационного файла
-    source "$CONF_FILE"
-
-    # Проверка обязательных переменных
-    if [ -z "$interface" ] || [ -z "$gamefilter" ] || [ -z "$strategy" ]; then
-        handle_error "Отсутствуют обязательные параметры в конфигурационном файле"
-    fi
-}
-
-# Функция для настройки репозитория
-setup_repository() {
-    if [ -d "$REPO_DIR" ]; then
-        log "Использование существующей версии репозитория."
-        return
-    else
-        log "Клонирование репозитория..."
-        git clone "$REPO_URL" "$REPO_DIR" || handle_error "Ошибка при клонировании репозитория"
-        cd "$REPO_DIR" && git checkout $MAIN_REPO_REV && cd ..
-        # rename_bat.sh
-        chmod +x "$BASE_DIR/rename_bat.sh"
-        rm -rf "$REPO_DIR/.git"
-        "$BASE_DIR/rename_bat.sh" || handle_error "Ошибка при переименовании файлов"
-    fi
 }
 
 # Функция для поиска bat файлов внутри репозитория
@@ -199,9 +140,6 @@ parse_bat_file() {
             local ports="${BASH_REMATCH[2]}"
             local nfqws_args="${BASH_REMATCH[3]}"
 
-            # Удаляем --new в конце если есть
-            # nfqws_args="${nfqws_args%% --new*}"
-
             # Очищаем лишние пробелы
             nfqws_args=$(echo "$match" | xargs)
             nfqws_args="${nfqws_args//=^!/=!}"
@@ -213,26 +151,22 @@ parse_bat_file() {
     done < <(echo "$content" | grep -oP -- '--filter-(tcp|udp)=([0-9,-]+)\s+(?:[\s\S]*?--new|.*)')
 }
 
-# Обновленная функция настройки nftables с метками
+# Функция настройки nftables
 setup_nftables() {
     local interface="$1"
-    local table_name="inet zapretunix"
-    local chain_name="output"
-    local rule_comment="Added by zapret script"
-    local queue_num=220
 
     log "Настройка nftables с очисткой только помеченных правил..."
 
     # Удаляем существующую таблицу, если она была создана этим скриптом
-    if sudo nft list tables | grep -q "$table_name"; then
-        sudo nft flush chain $table_name $chain_name
-        sudo nft delete chain $table_name $chain_name
-        sudo nft delete table $table_name
+    if sudo nft list tables | grep -q "$NFT_TABLE"; then
+        sudo nft flush chain $NFT_TABLE $NFT_CHAIN
+        sudo nft delete chain $NFT_TABLE $NFT_CHAIN
+        sudo nft delete table $NFT_TABLE
     fi
 
     # Добавляем таблицу и цепочку
-    sudo nft add table $table_name
-    sudo nft add chain $table_name $chain_name { type filter hook output priority 0\; }
+    sudo nft add table $NFT_TABLE
+    sudo nft add chain $NFT_TABLE $NFT_CHAIN { type filter hook output priority 0\; }
 
     local oif_clause=""
     if [ -n "$interface" ] && [ "$interface" != "any" ]; then
@@ -241,16 +175,16 @@ setup_nftables() {
 
     # Добавляем правило для TCP портов (если есть)
     if [ -n "$tcp_ports" ]; then
-        sudo nft add rule $table_name $chain_name $oif_clause meta mark != 0x40000000 tcp dport {$tcp_ports} counter queue num $queue_num bypass comment \"$rule_comment\" ||
+        sudo nft add rule $NFT_TABLE $NFT_CHAIN $oif_clause meta mark != $NFT_MARK tcp dport {$tcp_ports} counter queue num $NFT_QUEUE_NUM bypass comment \"$NFT_RULE_COMMENT\" ||
             handle_error "Ошибка при добавлении TCP правила nftables"
-        log "Добавлено TCP правило для портов: $tcp_ports -> queue $queue_num"
+        log "Добавлено TCP правило для портов: $tcp_ports -> queue $NFT_QUEUE_NUM"
     fi
 
     # Добавляем правило для UDP портов (если есть)
     if [ -n "$udp_ports" ]; then
-        sudo nft add rule $table_name $chain_name $oif_clause meta mark != 0x40000000 udp dport {$udp_ports} counter queue num $queue_num bypass comment \"$rule_comment\" ||
+        sudo nft add rule $NFT_TABLE $NFT_CHAIN $oif_clause meta mark != $NFT_MARK udp dport {$udp_ports} counter queue num $NFT_QUEUE_NUM bypass comment \"$NFT_RULE_COMMENT\" ||
             handle_error "Ошибка при добавлении UDP правила nftables"
-        log "Добавлено UDP правило для портов: $udp_ports -> queue $queue_num"
+        log "Добавлено UDP правило для портов: $udp_ports -> queue $NFT_QUEUE_NUM"
     fi
 }
 
@@ -265,8 +199,8 @@ start_nfqws() {
         full_params="$full_params $params"
     done
 
-    debug_log "Запуск nfqws с параметрами: $NFQWS_PATH --daemon --dpi-desync-fwmark=0x40000000 --qnum=220 $full_params"
-    eval "sudo $NFQWS_PATH --daemon --dpi-desync-fwmark=0x40000000 --qnum=220 $full_params" ||
+    debug_log "Запуск nfqws с параметрами: $NFQWS_PATH --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params"
+    eval "sudo $NFQWS_PATH --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params" ||
         handle_error "Ошибка при запуске nfqws"
 }
 
@@ -281,7 +215,7 @@ main() {
         -nointeractive)
             NOINTERACTIVE=true
             shift
-            load_config
+            load_config "$CONF_FILE"
             ;;
         *)
             break

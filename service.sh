@@ -1,28 +1,18 @@
 #!/usr/bin/env bash
 
-# Константы
-HOME_DIR_PATH="$(dirname "$0")"
-MAIN_SCRIPT_PATH="$(dirname "$0")/main_script.sh"   # Путь к основному скрипту
-CONF_FILE="$(dirname "$0")/conf.env"                # Путь к файлу конфигурации
-STOP_SCRIPT="$(dirname "$0")/stop_and_clean_nft.sh" # Путь к скрипту остановки и очистки nftables
+# Константы путей
+HOME_DIR_PATH="$(realpath "$(dirname "$0")")"
+BASE_DIR="$HOME_DIR_PATH"
+MAIN_SCRIPT_PATH="$HOME_DIR_PATH/main_script.sh"
+CONF_FILE="$HOME_DIR_PATH/conf.env"
+STOP_SCRIPT="$HOME_DIR_PATH/stop_and_clean_nft.sh"
 CUSTOM_STRATEGIES_DIR="$HOME_DIR_PATH/custom-strategies"
+REPO_DIR="$HOME_DIR_PATH/zapret-latest"
 BACKENDS_DIR="$HOME_DIR_PATH/init-backends"
 
-# Функция для проверки существования conf.env и обязательных непустых полей
-check_conf_file() {
-    if [[ ! -f "$CONF_FILE" ]]; then
-        return 1
-    fi
-
-    local required_fields=("interface" "gamefilter" "strategy")
-    for field in "${required_fields[@]}"; do
-        # Ищем строку вида field=Значение, где значение не пустое
-        if ! grep -q "^${field}=[^[:space:]]" "$CONF_FILE"; then
-            return 1
-        fi
-    done
-    return 0
-}
+# Подключаем общие библиотеки
+source "$HOME_DIR_PATH/lib/constants.sh"
+source "$HOME_DIR_PATH/lib/common.sh"
 
 # Функция для интерактивного создания файла конфигурации conf.env
 create_conf_file() {
@@ -50,43 +40,10 @@ create_conf_file() {
         gamefilter_choice="false"
     fi
 
-    # 3. Выбор стратегии
-    source ./main_script.sh
+    # 3. Выбор стратегии (используем общие функции)
     setup_repository
-    local strategy_choice=""
-    local repo_dir="$HOME_DIR_PATH/zapret-latest"
-
-    # Собираем стратегии из репозитория и кастомной папки
-    mapfile -t bat_files < <(find "$repo_dir" -maxdepth 1 -type f \( -name "*general*.bat" -o -name "*discord*.bat" \) 2>/dev/null)
-    mapfile -t custom_bat_files < <(find "$CUSTOM_STRATEGIES_DIR" -maxdepth 1 -type f -name "*.bat" 2>/dev/null)
-
-    if [ ${#bat_files[@]} -gt 0 ] || [ ${#custom_bat_files[@]} -gt 0 ]; then
-        echo "Доступные стратегии (файлы .bat):"
-        i=1
-
-        # Показываем кастомные стратегии
-        for bat in "${custom_bat_files[@]}"; do
-            echo "  $i) $(basename "$bat") (кастомная)"
-            ((i++))
-        done
-
-        # Показываем стратегии из репозитория
-        for bat in "${bat_files[@]}"; do
-            echo "  $i) $(basename "$bat")"
-            ((i++))
-        done
-
-        read -p "Выберите номер стратегии: " bat_choice
-
-        # Определяем выбранную стратегию
-        if [ "$bat_choice" -le "${#custom_bat_files[@]}" ]; then
-            strategy_choice="$(basename "${custom_bat_files[$((bat_choice - 1))]}")"
-        else
-            strategy_choice="$(basename "${bat_files[$((bat_choice - 1 - ${#custom_bat_files[@]}))]}")"
-        fi
-    else
-        read -p "Файлы .bat не найдены. Введите название стратегии вручную: " strategy_choice
-    fi
+    select_strategy_interactive
+    local strategy_choice="$selected_strategy"
 
     # Записываем полученные значения в conf.env
     cat <<EOF >"$CONF_FILE"
@@ -109,15 +66,6 @@ edit_conf_file() {
         if [[ ${answer:-Y} =~ ^[Yy]$ ]]; then
             restart_service
         fi
-    fi
-}
-
-# Функция для проверки статуса процесса nfqws
-check_nfqws_status() {
-    if pgrep -f "nfqws" >/dev/null; then
-        echo "Демоны nfqws запущены."
-    else
-        echo "Демоны nfqws не запущены."
     fi
 }
 
@@ -237,50 +185,6 @@ run_interactive() {
     read -p "Нажмите Enter для выхода..."
 }
 
-# Функция для получения доступных стратегий
-strategies() {
-    find "$(dirname "$0")/zapret-latest" $CUSTOM_STRATEGIES_DIR \
-        -name "general*" -type f -printf "%f\n" 2>/dev/null | sort -u
-}
-
-# Функция для валидации и нормализации названия стратегии
-# Возвращает 1, если не удалось валидировать название стратегии
-#
-# Примеры:
-#   "general" -> echo "general.bat"
-#   "alt11" -> echo "general_alt11.bat"
-#   "not-a-strategy" -> return 1
-normalize_strategy() {
-    local s="$1"
-
-    # Поиск совпадения с совпадением регистра
-    local exact_match
-    exact_match=$(strategies | grep -E "^(${s}|${s}\\.bat|general_${s}|general_${s}\\.bat)$")
-
-    if [ -n "$exact_match" ]; then
-        echo "$exact_match"
-        return 0
-    fi
-
-    # Регистронезависимый поиск
-    local case_insensitive_match
-    case_insensitive_match=$(strategies | grep -i -E "^(${s}|${s}\\.bat|general_${s}|general_${s}\\.bat)$" | head -n1)
-
-    if [ -n "$case_insensitive_match" ]; then
-        echo "$case_insensitive_match"
-        return 0
-    fi
-
-    return 1
-}
-
-# Функция для вывода доступных стратегий
-show_strategies() {
-    echo "Доступные стратегии:"
-    echo
-    strategies
-}
-
 # Функция для вывода текущей конфигурации
 show_config() {
     if [ -f "$CONF_FILE" ]; then
@@ -299,7 +203,7 @@ update_config() {
     local interface="${2:-any}"
     local gamefilter="$3"
 
-    # Валидация и нормализация названия стратегии
+    # Валидация и нормализация названия стратегии (функция из lib/common.sh)
     local normalized_strategy
     if ! normalized_strategy=$(normalize_strategy "$strategy"); then
         echo "Несуществующая стратегия!"
@@ -316,8 +220,6 @@ update_config() {
             exit 1
         fi
     fi
-
-    # TODO: Check interface.
 
     cat > "$CONF_FILE" << ENV
 interface=${interface}
@@ -345,6 +247,7 @@ show_usage() {
     echo "    -s --start         Start service"
     echo "    -S --stop          Stop service"
     echo "    -r --restart       Just restart the service"
+    echo "    -d --download      Download strategies repository"
     echo "    -l --strategies    List available strategies"
     echo "    -c --config        Show current config"
     echo "    -h --help          Show this help"
@@ -388,6 +291,12 @@ while [[ $# -gt 0 ]]; do
             ;;
         -l|--strategies)
             show_strategies
+            exit 0
+            ;;
+        -d|--download)
+            check_dependencies
+            setup_repository
+            echo "Стратегии загружены."
             exit 0
             ;;
         -c|--config)

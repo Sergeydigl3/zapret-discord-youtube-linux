@@ -1,0 +1,57 @@
+name: Test Strategies & Services
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  #######################################################################
+  # Strategy tests (native Ubuntu)
+  #######################################################################
+  test-strategies:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nftables git
+
+      - name: Download strategies
+        run: ./service.sh --download
+
+      - name: List available strategies
+        run: ./service.sh --strategies
+
+      - name: Run strategy tests
+        run: sudo ./ci/test_strategies.sh
+
+  #######################################################################
+  # Service tests (real init systems)
+  #######################################################################
+  test-service:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - init: systemd
+            type: native
+
+    steps:
+      - uses: actions/checkout@v4
+
+      ###################################################################
+      # Native systemd
+      ###################################################################
+      - name: Install dependencies (native)
+        if: matrix.type == 'native'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nftables git
+
+      - name: Run tests (native)
+        run: sudo ./ci/test_service.sh

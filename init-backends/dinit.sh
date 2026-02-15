@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-# Константы
-SERVICE_NAME="zapret_discord_youtube"
+# SERVICE_NAME берётся из lib/constants.sh (подключается в service.sh)
 SERVICE_FILE="/etc/dinit.d/$SERVICE_NAME"
 
 # Функция для проверки статуса сервиса
