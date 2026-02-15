@@ -10,7 +10,7 @@ REPO_URL="https://github.com/Flowseal/zapret-discord-youtube"
 NFQWS_PATH="$BASE_DIR/nfqws"
 CONF_FILE="$BASE_DIR/conf.env"
 STOP_SCRIPT="$BASE_DIR/stop_and_clean_nft.sh"
-MAIN_REPO_REV="7e723f0a3f7185af1425b93938a56401a1e6b286"
+MAIN_REPO_REV="7952e58ee8b068b731d55d2ef8f491fd621d6ff0"
 
 # Флаг отладки
 DEBUG=false

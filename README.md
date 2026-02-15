@@ -49,7 +49,7 @@ sudo bash main_script.sh
 
 ## О версиях
 
-Адаптер использует стратегии с [этого коммита](https://github.com/Flowseal/zapret-discord-youtube/commit/7e723f0a3f7185af1425b93938a56401a1e6b286) (прописано в `main_script.sh` как `MAIN_REPO_REV`). Можно изменить на другой коммит при необходимости.
+Адаптер использует стратегии с [этого коммита](https://github.com/Flowseal/zapret-discord-youtube/commit/7952e58ee8b068b731d55d2ef8f491fd621d6ff0) (прописано в `main_script.sh` как `MAIN_REPO_REV`). Можно изменить на другой коммит при необходимости.
 
 Если текущая версия не работает, попробуйте [стабильные релизы](https://github.com/Sergeydigl3/zapret-discord-youtube-linux/releases).
 
