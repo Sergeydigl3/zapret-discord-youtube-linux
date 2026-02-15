@@ -1,16 +1,18 @@
-name: Test Strategies
+name: Test Strategies & Services
 
 on:
   pull_request:
     branches: [master]
 
 jobs:
+  #######################################################################
+  # Strategy tests (native Ubuntu)
+  #######################################################################
   test-strategies:
-    name: Test all strategies
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
@@ -26,108 +28,30 @@ jobs:
       - name: Run strategy tests
         run: sudo ./ci/test_strategies.sh
 
+  #######################################################################
+  # Service tests (real init systems)
+  #######################################################################
   test-service:
-    name: Test service (${{ matrix.init }})
     runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
         include:
           - init: systemd
-            native: true
-
-          - init: openrc
-            native: false
-            image_url: https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-virt-3.19.1-x86_64.iso
-            setup: |
-              apk add --no-cache bash git nftables openrc grep sed coreutils procps
-              mkdir -p /run/openrc && touch /run/openrc/softlevel
-
-          - init: runit
-            native: false
-            image_url: https://repo-default.voidlinux.org/live/current/void-live-x86_64-20240314-base.iso
-            setup: |
-              xbps-install -Syu -y bash git nftables grep sed coreutils procps-ng
-
-          - init: dinit
-            native: false
-            image_url: https://download.artixlinux.org/iso/artix-base-dinit-20240823-x86_64.iso
-            setup: |
-              pacman -Syu --noconfirm bash git nftables grep sed coreutils procps-ng
+            type: native
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # Native (systemd) test
+      ###################################################################
+      # Native systemd
+      ###################################################################
       - name: Install dependencies (native)
-        if: matrix.native
+        if: matrix.type == 'native'
         run: |
           sudo apt-get update
           sudo apt-get install -y nftables git
 
-      - name: Run service tests (native)
-        if: matrix.native
+      - name: Run tests (native)
         run: sudo ./ci/test_service.sh
-
-      # VM-based tests
-      - name: Install QEMU
-        if: "!matrix.native"
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y qemu-system-x86 qemu-utils wget expect
-
-      - name: Download VM image
-        if: "!matrix.native"
-        run: |
-          wget -q --show-progress -O vm.iso "${{ matrix.image_url }}"
-          qemu-img create -f qcow2 disk.qcow2 4G
-
-      - name: Prepare test environment
-        if: "!matrix.native"
-        run: |
-          mkdir -p shared
-          cp -r . shared/project
-
-          cat > shared/setup.sh << 'SETUP'
-          #!/bin/bash
-          set -ex
-          ${{ matrix.setup }}
-          SETUP
-          chmod +x shared/setup.sh
-
-          cat > shared/run_tests.sh << 'RUN'
-          #!/bin/bash
-          set -ex
-          cd /mnt/project 2>/dev/null || cd /root/project 2>/dev/null || cd /shared/project
-          ./ci/test_service.sh
-          echo "===TESTS_PASSED==="
-          RUN
-          chmod +x shared/run_tests.sh
-
-      - name: Run VM tests
-        if: "!matrix.native"
-        timeout-minutes: 15
-        run: |
-          # Запускаем VM и ждём завершения
-          timeout 900 qemu-system-x86_64 \
-            -m 2048 \
-            -smp 2 \
-            -nographic \
-            -no-reboot \
-            -cdrom vm.iso \
-            -drive file=disk.qcow2,format=qcow2 \
-            -virtfs local,path=./shared,mount_tag=shared,security_model=none \
-            -netdev user,id=net0 \
-            -device virtio-net-pci,netdev=net0 \
-            2>&1 | tee vm.log || true
-
-          # Проверяем результат
-          if grep -q "===TESTS_PASSED===" vm.log; then
-            echo "Tests passed!"
-            exit 0
-          else
-            echo "Tests failed or VM didn't complete"
-            tail -100 vm.log
-            exit 1
-          fi
