@@ -5,7 +5,7 @@ set -e
 # Константы
 BASE_DIR="$(realpath "$(dirname "$0")")"
 REPO_DIR="$BASE_DIR/zapret-latest"
-CUSTOM_DIR="./custom-strategies"
+CUSTOM_DIR="$BASE_DIR/custom-strategies"
 REPO_URL="https://github.com/Flowseal/zapret-discord-youtube"
 NFQWS_PATH="$BASE_DIR/nfqws"
 CONF_FILE="$BASE_DIR/conf.env"
