@@ -57,13 +57,11 @@ install_service() {
         fi
     fi
 
-    # Получение абсолютного пути к основному скрипту и скрипту остановки
+    # Получение абсолютного пути
     local absolute_homedir_path
     absolute_homedir_path="$(realpath "$HOME_DIR_PATH")"
-    local absolute_main_script_path
-    absolute_main_script_path="$(realpath "$MAIN_SCRIPT_PATH")"
-    local absolute_stop_script_path
-    absolute_stop_script_path="$(realpath "$STOP_SCRIPT")"
+    local absolute_service_script_path
+    absolute_service_script_path="$absolute_homedir_path/service.sh"
 
     echo "Создание openrc сервиса для автозагрузки..."
     sudo bash -c "cat > $SERVICE_FILE" <<EOF
@@ -73,11 +71,10 @@ install_service() {
 description="Zapret bypass для Discord/YouTube (nfqws + nftables)"
 
  : "\${HOMEDIR:=$absolute_homedir_path}"
- : "\${MAIN_SCRIPT:=\$HOMEDIR/main_script.sh}"
- : "\${STOP_SCRIPT:=\$HOMEDIR/stop_and_clean_nft.sh}"
+ : "\${SERVICE_SCRIPT:=\$HOMEDIR/service.sh}"
 
 command="/bin/bash"
-command_args="\$MAIN_SCRIPT -nointeractive"
+command_args="\$SERVICE_SCRIPT daemon"
 command_background="yes"
 pidfile="/run/$SERVICE_NAME.pid"
 directory="\$HOMEDIR"
@@ -108,10 +105,8 @@ start_pre() {
 }
 
 post_stop() {
-    if [[ -x "\$STOP_SCRIPT" ]]; then
-        einfo "Выполняем очистку nftables..."
-        "\$STOP_SCRIPT"
-    fi
+    einfo "Выполняем очистку nftables..."
+    "\$SERVICE_SCRIPT" kill
 }
 
 logs() {
@@ -134,7 +129,6 @@ EOF
 remove_service() {
     echo "Удаление сервиса..."
     sudo rc-service "$SERVICE_NAME" stop
-    $STOP_SCRIPT
     sudo rc-update del "$SERVICE_NAME" default
     sudo rm -f "$SERVICE_FILE"
     echo "Сервис удален."

@@ -24,8 +24,7 @@ check_service_status() {
 # Функция установки
 install_service() {
     local absolute_homedir_path="$(realpath "${HOME_DIR_PATH:-$HOME}")"
-    local absolute_main_script_path="$(realpath "${MAIN_SCRIPT_PATH:-$HOME/main_script.sh}")"
-    local absolute_stop_script_path="$(realpath "${STOP_SCRIPT:-$HOME/stop_and_clean_nft.sh}")"
+    local absolute_service_script_path="$absolute_homedir_path/service.sh"
 
     sudo mkdir -p "$SERVICE_DIR/log"
     sudo mkdir -p "$LOG_DIR"
@@ -34,12 +33,12 @@ install_service() {
 #!/bin/sh
 exec 2>&1
 cd "$absolute_homedir_path"
-exec "$absolute_main_script_path" -nointeractive
+exec "$absolute_service_script_path" daemon
 EOF
 
     sudo bash -c "cat > $SERVICE_DIR/finish" <<EOF
 #!/bin/sh
-"$absolute_stop_script_path"
+"$absolute_service_script_path" kill
 exit 0
 EOF
 

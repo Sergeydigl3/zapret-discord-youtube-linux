@@ -185,3 +185,157 @@ select_strategy_interactive() {
         echo "Неверный выбор. Попробуйте еще раз."
     done
 }
+
+# Получение полного пути к файлу стратегии
+# Возвращает путь к файлу или пустую строку если не найден
+get_strategy_path() {
+    local strategy="$1"
+
+    if [ -f "$CUSTOM_STRATEGIES_DIR/$strategy" ]; then
+        echo "$CUSTOM_STRATEGIES_DIR/$strategy"
+    elif [ -f "$REPO_DIR/$strategy" ]; then
+        echo "$REPO_DIR/$strategy"
+    else
+        echo ""
+    fi
+}
+
+# -----------------------------------------------------------------------------
+# Парсинг .bat файлов стратегий
+# -----------------------------------------------------------------------------
+
+# Парсинг параметров из bat файла
+# Устанавливает глобальные переменные: tcp_ports, udp_ports, nfqws_params[]
+# Требует: USE_GAME_FILTER, GAME_FILTER_PORTS
+parse_bat_file() {
+    local file="$1"
+    local bin_path="bin/"
+    debug_log "Parsing .bat file: $file"
+
+    # Читаем весь файл целиком
+    local content=$(cat "$file" | tr -d '\r')
+
+    debug_log "File content loaded"
+
+    # Заменяем переменные
+    content="${content//%BIN%/$bin_path}"
+    content="${content//%LISTS%/lists/}"
+
+    # Обрабатываем GameFilter
+    if [ "$USE_GAME_FILTER" = true ]; then
+        content="${content//%GameFilter%/$GAME_FILTER_PORTS}"
+    else
+        content="${content//,%GameFilter%/}"
+        content="${content//%GameFilter%,/}"
+    fi
+
+    # Ищем --wf-tcp и --wf-udp
+    local wf_tcp_count=$(echo "$content" | grep -oP -- '--wf-tcp=' | wc -l)
+    local wf_udp_count=$(echo "$content" | grep -oP -- '--wf-udp=' | wc -l)
+
+    # Проверяем количество вхождений
+    if [ "$wf_tcp_count" -eq 0 ] || [ "$wf_udp_count" -eq 0 ]; then
+        echo "ERROR: --wf-tcp or --wf-udp not found in $file"
+        exit 1
+    fi
+
+    if [ "$wf_tcp_count" -gt 1 ]; then
+        echo "ERROR: Multiple --wf-tcp entries found in $file (found: $wf_tcp_count)"
+        exit 1
+    fi
+
+    if [ "$wf_udp_count" -gt 1 ]; then
+        echo "ERROR: Multiple --wf-udp entries found in $file (found: $wf_udp_count)"
+        exit 1
+    fi
+
+    # Извлекаем порты
+    tcp_ports=$(echo "$content" | grep -oP -- '--wf-tcp=\K[0-9,-]+' | head -n1)
+    udp_ports=$(echo "$content" | grep -oP -- '--wf-udp=\K[0-9,-]+' | head -n1)
+
+    debug_log "TCP ports: $tcp_ports"
+    debug_log "UDP ports: $udp_ports"
+
+    # Парсим с помощью grep -oP (Perl regex)
+    nfqws_params=()
+    while IFS= read -r match; do
+        if [[ "$match" =~ --filter-(tcp|udp)=([0-9,%-]+)[[:space:]]+(.*) ]]; then
+            local protocol="${BASH_REMATCH[1]}"
+            local ports="${BASH_REMATCH[2]}"
+            local nfqws_args="${BASH_REMATCH[3]}"
+
+            # Очищаем лишние пробелы
+            nfqws_args=$(echo "$match" | xargs)
+            nfqws_args="${nfqws_args//=^!/=!}"
+
+            nfqws_params+=("$nfqws_args")
+            debug_log "Matched protocol: $protocol, ports: $ports"
+            debug_log "NFQWS parameters: $nfqws_args"
+        fi
+    done < <(echo "$content" | grep -oP -- '--filter-(tcp|udp)=([0-9,-]+)\s+(?:[\s\S]*?--new|.*)')
+}
+
+# -----------------------------------------------------------------------------
+# Запуск nfqws
+# -----------------------------------------------------------------------------
+
+# Запуск процесса nfqws
+# Требует: NFQWS_PATH, REPO_DIR, NFT_MARK, NFT_QUEUE_NUM, nfqws_params[]
+start_nfqws() {
+    log "Запуск процесса nfqws..."
+    stop_nfqws
+    cd "$REPO_DIR" || handle_error "Не удалось перейти в директорию $REPO_DIR"
+
+    local full_params=""
+    for params in "${nfqws_params[@]}"; do
+        full_params="$full_params $params"
+    done
+
+    debug_log "Запуск nfqws с параметрами: $NFQWS_PATH --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params"
+    eval "sudo $NFQWS_PATH --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params" ||
+        handle_error "Ошибка при запуске nfqws"
+}
+
+# -----------------------------------------------------------------------------
+# Основная функция запуска zapret
+# -----------------------------------------------------------------------------
+
+# Запуск zapret с указанной конфигурацией
+# Использует глобальные переменные из conf.env: interface, gamefilter, strategy
+# Требует: REPO_DIR, NFQWS_PATH, STOP_SCRIPT
+run_zapret() {
+    # Остановка предыдущего экземпляра
+    source "$BASE_DIR/lib/firewall.sh"
+    stop_nfqws
+    nft_clear
+    sleep 1
+
+    # Установка USE_GAME_FILTER
+    if [ "$gamefilter" == "true" ]; then
+        USE_GAME_FILTER=true
+        log "GameFilter включен"
+    else
+        USE_GAME_FILTER=false
+        log "GameFilter выключен"
+    fi
+
+    # Получаем путь к стратегии
+    local strategy_path
+    strategy_path=$(get_strategy_path "$strategy")
+    if [ -z "$strategy_path" ]; then
+        handle_error "Указанный .bat файл стратегии $strategy не найден"
+    fi
+
+    # Парсим стратегию
+    parse_bat_file "$strategy_path"
+
+    # Настройка nftables
+    log "Настройка nftables..."
+    nft_setup "$tcp_ports" "$udp_ports" "$interface" ||
+        handle_error "Ошибка при настройке nftables"
+    log "Настройка nftables завершена (TCP: $tcp_ports, UDP: $udp_ports)"
+
+    # Запуск nfqws
+    start_nfqws
+    log "Настройка успешно завершена"
+}

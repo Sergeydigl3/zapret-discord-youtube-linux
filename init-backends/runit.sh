@@ -38,25 +38,23 @@ install_service() {
         fi
     fi
 
-    # Получение абсолютного пути к основному скрипту и скрипту остановки
+    # Получение абсолютного пути
     local absolute_homedir_path
     absolute_homedir_path="$(realpath "$HOME_DIR_PATH")"
-    local absolute_main_script_path
-    absolute_main_script_path="$(realpath "$MAIN_SCRIPT_PATH")"
-    local absolute_stop_script_path
-    absolute_stop_script_path="$(realpath "$STOP_SCRIPT")"
+    local absolute_service_script_path
+    absolute_service_script_path="$absolute_homedir_path/service.sh"
 
     sudo mkdir -p "$SERVICE_DIR"
     sudo tee "$SERVICE_DIR/run" >/dev/null <<EOF
 #!/bin/sh
 exec 2>&1
-exec "$absolute_main_script_path" -nointeractive
+exec "$absolute_service_script_path" daemon
 EOF
 
     sudo tee "$SERVICE_DIR/finish" >/dev/null <<EOF
 #!/bin/sh
 exec 2>&1
-exec "$absolute_stop_script_path"
+exec "$absolute_service_script_path" kill
 EOF
 
     # Установка прав

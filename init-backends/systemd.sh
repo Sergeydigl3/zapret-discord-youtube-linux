@@ -37,13 +37,11 @@ install_service() {
         fi
     fi
 
-    # Получение абсолютного пути к основному скрипту и скрипту остановки
+    # Получение абсолютного пути
     local absolute_homedir_path
     absolute_homedir_path="$(realpath "$HOME_DIR_PATH")"
-    local absolute_main_script_path
-    absolute_main_script_path="$(realpath "$MAIN_SCRIPT_PATH")"
-    local absolute_stop_script_path
-    absolute_stop_script_path="$(realpath "$STOP_SCRIPT")"
+    local absolute_service_script_path
+    absolute_service_script_path="$absolute_homedir_path/service.sh"
 
     echo "Создание systemd сервиса для автозагрузки..."
     sudo bash -c "cat > $SERVICE_FILE" <<EOF
@@ -56,8 +54,8 @@ Wants=network-online.target
 Type=simple
 WorkingDirectory=$absolute_homedir_path
 User=root
-ExecStart=/usr/bin/env bash $absolute_main_script_path -nointeractive
-ExecStop=/usr/bin/env bash $absolute_stop_script_path
+ExecStart=/usr/bin/env bash $absolute_service_script_path daemon
+ExecStop=/usr/bin/env bash $absolute_service_script_path kill
 ExecStopPost=/usr/bin/env echo "Сервис завершён"
 PIDFile=/run/$SERVICE_NAME.pid
 
@@ -94,8 +92,6 @@ stop_service() {
     echo "Остановка сервиса..."
     sudo systemctl stop "$SERVICE_NAME"
     echo "Сервис остановлен."
-    # Вызов скрипта для остановки и очистки nftables
-    $STOP_SCRIPT
 }
 
 # Функция для перезапуска сервиса

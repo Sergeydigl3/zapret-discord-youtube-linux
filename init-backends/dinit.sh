@@ -37,19 +37,17 @@ install_service() {
         fi
     fi
 
-    # Получение абсолютного пути к основному скрипту и скрипту остановки
+    # Получение абсолютного пути
     local absolute_homedir_path
     absolute_homedir_path="$(realpath "$HOME_DIR_PATH")"
-    local absolute_main_script_path
-    absolute_main_script_path="$(realpath "$MAIN_SCRIPT_PATH")"
-    local absolute_stop_script_path
-    absolute_stop_script_path="$(realpath "$STOP_SCRIPT")"
+    local absolute_service_script_path
+    absolute_service_script_path="$absolute_homedir_path/service.sh"
 
     echo "Создание сервиса для автозагрузки..."
     sudo bash -c "cat > $SERVICE_FILE" <<EOF
 type = process
-command = /usr/bin/env bash "$absolute_main_script_path" -nointeractive
-stop-command = /usr/bin/env bash "$absolute_stop_script_path"
+command = /usr/bin/env bash "$absolute_service_script_path" daemon
+stop-command = /usr/bin/env bash "$absolute_service_script_path" kill
 # depends-on = network
 
 restart = on-failure
@@ -85,8 +83,6 @@ stop_service() {
     echo "Остановка сервиса..."
     sudo dinitctl stop "$SERVICE_NAME"
     echo "Сервис остановлен."
-    # Вызов скрипта для остановки и очистки nftables
-    $STOP_SCRIPT
 }
 
 # Функция для перезапуска сервиса
