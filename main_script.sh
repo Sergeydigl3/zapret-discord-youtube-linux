@@ -13,6 +13,7 @@ STOP_SCRIPT="$BASE_DIR/stop_and_clean_nft.sh"
 # Подключаем общие библиотеки
 source "$BASE_DIR/lib/constants.sh"
 source "$BASE_DIR/lib/common.sh"
+source "$BASE_DIR/lib/firewall.sh"
 
 # Флаги
 DEBUG=false
@@ -156,43 +157,16 @@ parse_bat_file() {
 setup_nftables() {
     local interface="$1"
 
-    log "Настройка nftables с очисткой только помеченных правил..."
-
-    # Удаляем существующую таблицу, если она была создана этим скриптом
-    if sudo nft list tables | grep -q "$NFT_TABLE"; then
-        sudo nft flush chain $NFT_TABLE $NFT_CHAIN
-        sudo nft delete chain $NFT_TABLE $NFT_CHAIN
-        sudo nft delete table $NFT_TABLE
-    fi
-
-    # Добавляем таблицу и цепочку
-    sudo nft add table $NFT_TABLE
-    sudo nft add chain $NFT_TABLE $NFT_CHAIN { type filter hook output priority 0\; }
-
-    local oif_clause=""
-    if [ -n "$interface" ] && [ "$interface" != "any" ]; then
-        oif_clause="oifname \"$interface\""
-    fi
-
-    # Добавляем правило для TCP портов (если есть)
-    if [ -n "$tcp_ports" ]; then
-        sudo nft add rule $NFT_TABLE $NFT_CHAIN $oif_clause meta mark != $NFT_MARK tcp dport {$tcp_ports} counter queue num $NFT_QUEUE_NUM bypass comment \"$NFT_RULE_COMMENT\" ||
-            handle_error "Ошибка при добавлении TCP правила nftables"
-        log "Добавлено TCP правило для портов: $tcp_ports -> queue $NFT_QUEUE_NUM"
-    fi
-
-    # Добавляем правило для UDP портов (если есть)
-    if [ -n "$udp_ports" ]; then
-        sudo nft add rule $NFT_TABLE $NFT_CHAIN $oif_clause meta mark != $NFT_MARK udp dport {$udp_ports} counter queue num $NFT_QUEUE_NUM bypass comment \"$NFT_RULE_COMMENT\" ||
-            handle_error "Ошибка при добавлении UDP правила nftables"
-        log "Добавлено UDP правило для портов: $udp_ports -> queue $NFT_QUEUE_NUM"
-    fi
+    log "Настройка nftables..."
+    nft_setup "$tcp_ports" "$udp_ports" "$interface" ||
+        handle_error "Ошибка при настройке nftables"
+    log "Настройка nftables завершена (TCP: $tcp_ports, UDP: $udp_ports)"
 }
 
 # Функция запуска nfqws
 start_nfqws() {
     log "Запуск процесса nfqws..."
-    sudo pkill -f nfqws
+    stop_nfqws
     cd "$REPO_DIR" || handle_error "Не удалось перейти в директорию $REPO_DIR"
 
     local full_params=""

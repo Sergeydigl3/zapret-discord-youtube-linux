@@ -8,11 +8,11 @@ CONF_FILE="$HOME_DIR_PATH/conf.env"
 STOP_SCRIPT="$HOME_DIR_PATH/stop_and_clean_nft.sh"
 CUSTOM_STRATEGIES_DIR="$HOME_DIR_PATH/custom-strategies"
 REPO_DIR="$HOME_DIR_PATH/zapret-latest"
-BACKENDS_DIR="$HOME_DIR_PATH/init-backends"
 
 # Подключаем общие библиотеки
 source "$HOME_DIR_PATH/lib/constants.sh"
 source "$HOME_DIR_PATH/lib/common.sh"
+source "$HOME_DIR_PATH/init-backends/init.sh"
 
 # Функция для интерактивного создания файла конфигурации conf.env
 create_conf_file() {
@@ -68,70 +68,6 @@ edit_conf_file() {
         fi
     fi
 }
-
-detect_init_system() {
-    COMM=$(sudo cat /proc/1/comm 2>/dev/null | tr -d '\n')
-    EXE=$(sudo readlink -f /proc/1/exe 2>/dev/null)
-    EXE_NAME=$(basename "$EXE" 2>/dev/null)
-
-    # SYSTEMD
-    if [ "$EXE_NAME" = "systemd" ] || [ -d "/run/systemd/system" ]; then
-        echo "systemd"
-        return
-    fi
-
-    # DINIT
-    if [ "$EXE_NAME" = "dinit" ] || [ "$COMM" = "dinit" ]; then
-        echo "dinit"
-        return
-    fi
-
-    # RUNIT
-    case "$EXE_NAME" in
-    runit*)
-        echo "runit"
-        return
-        ;;
-    esac
-
-    # S6
-    case "$EXE_NAME" in
-    s6-svscan*)
-        echo "s6"
-        return
-        ;;
-    esac
-    if [ -d "/run/s6" ] || [ -d "/var/run/s6" ]; then
-        echo "s6"
-        return
-    fi
-
-    # OPENRC
-    if [ -d "/run/openrc" ] || [ -f "/sbin/rc" ] || [ -f "/etc/init.d/rc" ] || type rc-status >/dev/null 2>&1; then
-        echo "openrc"
-        return
-    fi
-
-    #SYSVINIT
-    if [ "$EXE_NAME" = "init" ] || [ "$COMM" = "init" ]; then
-        echo "sysvinit"
-        return
-    fi
-
-    echo "unknown/container ($EXE_NAME)"
-    exit 1
-}
-
-INIT_SYS=$(detect_init_system)
-INIT_SCRIPT="$BACKENDS_DIR/${INIT_SYS}.sh"
-
-if [[ -f "$INIT_SCRIPT" ]]; then
-    echo "Обнаружена система: $INIT_SYS. Подключаем $INIT_SCRIPT"
-    source "$INIT_SCRIPT"
-else
-    echo "Ошибка: Не найден скрипт для системы $INIT_SYS ($INIT_SCRIPT)"
-    exit 1
-fi
 
 # Основное меню управления
 show_menu() {
