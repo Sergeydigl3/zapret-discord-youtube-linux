@@ -5,7 +5,6 @@ set -e
 # Константы путей
 BASE_DIR="$(realpath "$(dirname "$0")")"
 REPO_DIR="$BASE_DIR/zapret-latest"
-CUSTOM_DIR="./custom-strategies"
 CUSTOM_STRATEGIES_DIR="$BASE_DIR/custom-strategies"
 NFQWS_PATH="$BASE_DIR/nfqws"
 CONF_FILE="$BASE_DIR/conf.env"
@@ -34,18 +33,20 @@ find_bat_files() {
 select_strategy() {
     # Сначала собираем кастомные файлы
     local custom_files=()
-    if [ -d "$CUSTOM_DIR" ]; then
-        cd "$CUSTOM_DIR" && custom_files=($(ls *.bat 2>/dev/null)) && cd ..
+    if [ -d "$CUSTOM_STRATEGIES_DIR" ]; then
+        while IFS= read -r -d '' file; do
+            custom_files+=("$(basename "$file")")
+        done < <(find "$CUSTOM_STRATEGIES_DIR" -maxdepth 1 -type f -name "*.bat" -print0 2>/dev/null)
     fi
 
     cd "$REPO_DIR" || handle_error "Не удалось перейти в директорию $REPO_DIR"
 
     if $NOINTERACTIVE; then
-        if [ ! -f "$strategy" ] && [ ! -f "../$CUSTOM_DIR/$strategy" ]; then
+        if [ ! -f "$strategy" ] && [ ! -f "$CUSTOM_STRATEGIES_DIR/$strategy" ]; then
             handle_error "Указанный .bat файл стратегии $strategy не найден"
         fi
         # Проверяем, где лежит файл, чтобы распарсить
-        [ -f "$strategy" ] && parse_bat_file "$strategy" || parse_bat_file "../$CUSTOM_DIR/$strategy"
+        [ -f "$strategy" ] && parse_bat_file "$strategy" || parse_bat_file "$CUSTOM_STRATEGIES_DIR/$strategy"
         cd ..
         return
     fi
@@ -72,7 +73,7 @@ select_strategy() {
             if [ -f "$strategy" ]; then
                 final_path="$REPO_DIR/$strategy"
             else
-                final_path="$REPO_DIR/../$CUSTOM_DIR/$strategy"
+                final_path="$CUSTOM_STRATEGIES_DIR/$strategy"
             fi
 
             cd ..

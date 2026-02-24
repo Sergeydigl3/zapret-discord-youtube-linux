@@ -13,7 +13,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MAIN_SCRIPT="$SCRIPT_DIR/main_script.sh"
 STOP_SCRIPT="$SCRIPT_DIR/stop_and_clean_nft.sh"
 REPO_DIR="$SCRIPT_DIR/zapret-latest"
-CUSTOM_DIR="$SCRIPT_DIR/custom-strategies"
+CUSTOM_STRATEGIES_DIR="$SCRIPT_DIR/custom-strategies"
 CONF_FILE="$SCRIPT_DIR/conf.env"
 RESULTS_FILE="$SCRIPT_DIR/auto_tune_youtube_results.txt"
 
@@ -45,8 +45,8 @@ FAILED_COUNT=0
 # Загрузить список стратегий (порядок как в main_script.sh)
 load_strategy_files() {
     # 1. Кастомные стратегии
-    if [[ -d "$CUSTOM_DIR" ]]; then
-        for file in "$CUSTOM_DIR"/*.bat; do
+    if [[ -d "$CUSTOM_STRATEGIES_DIR" ]]; then
+        for file in "$CUSTOM_STRATEGIES_DIR"/*.bat; do
             [[ -f "$file" ]] && STRATEGY_FILES+=("$(basename "$file")")
         done
     fi
