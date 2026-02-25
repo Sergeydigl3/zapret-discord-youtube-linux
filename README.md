@@ -169,6 +169,18 @@ sudo bash ./service.sh config set general.bat enp0s3 -g  # с gamefilter
 sudo bash ./service.sh config set discord -n             # без перезапуска сервиса
 ```
 
+### Создание ярлыка в меню приложений
+
+```bash
+# Создать ярлык в меню приложений (для GUI запуска)
+bash ./service.sh desktop install
+
+# Удалить ярлык из меню приложений
+bash ./service.sh desktop remove
+```
+
+После установки ярлыка вы сможете запустить zapret из меню приложений вашей системы (категория "Сеть" или "Система").
+
 ### Утилиты
 
 ```bash

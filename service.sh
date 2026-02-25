@@ -12,6 +12,7 @@ NFQWS_PATH="$HOME_DIR_PATH/nfqws"
 source "$HOME_DIR_PATH/lib/constants.sh"
 source "$HOME_DIR_PATH/lib/common.sh"
 source "$HOME_DIR_PATH/lib/download.sh"
+source "$HOME_DIR_PATH/lib/desktop.sh"
 source "$HOME_DIR_PATH/init-backends/init.sh"
 
 # Функция для интерактивного создания файла конфигурации conf.env
@@ -86,7 +87,7 @@ show_service_menu() {
         echo "0. Назад"
         read -p "Выберите действие: " choice
         case $choice in
-        1) install_service ;;
+        1) ensure_config_exists && install_service ;;
         0) return ;;
         esac
         ;;
@@ -113,6 +114,57 @@ show_service_menu() {
         2) remove_service ;;
         0) return ;;
         esac
+        ;;
+    esac
+}
+
+# Подменю управления зависимостями
+show_dependencies_menu() {
+    echo ""
+    echo "=== Управление зависимостями ==="
+    echo "1. Скачать зависимости (интерактивный выбор версий)"
+    echo "2. Скачать рекомендованные версии"
+    echo "3. Показать список стратегий"
+    echo "0. Назад"
+    read -p "Выберите действие: " choice
+    case $choice in
+    1)
+        handle_download_deps_command
+        ;;
+    2)
+        handle_download_deps_command --default
+        ;;
+    3)
+        show_strategies
+        read -p "Нажмите Enter для продолжения..."
+        ;;
+    0) return ;;
+    *)
+        echo "Неверный выбор."
+        ;;
+    esac
+}
+
+# Подменю управления desktop ярлыком
+show_desktop_menu() {
+    echo ""
+    echo "=== Управление desktop ярлыком ==="
+    echo "1. Создать ярлык в меню приложений"
+    echo "2. Удалить ярлык из меню приложений"
+    echo "0. Назад"
+    read -p "Выберите действие: " choice
+    case $choice in
+    1)
+        create_desktop_shortcut
+        read -p "Нажмите Enter для продолжения..."
+        ;;
+    2)
+        remove_desktop_shortcut
+        read -p "Нажмите Enter для продолжения..."
+        ;;
+    0) return ;;
+    *)
+        echo "Неверный выбор."
         ;;
     esac
 }
@@ -232,12 +284,16 @@ show_menu() {
     echo "1. Запустить (без установки сервиса)"
     echo "2. Управление сервисом"
     echo "3. Изменить конфигурацию"
+    echo "4. Управление зависимостями"
+    echo "5. Управление desktop ярлыком"
     echo "0. Выход"
     read -p "Выберите действие: " choice
     case $choice in
     1) run_zapret_command ;;
     2) show_service_menu ;;
     3) create_conf_file ;;
+    4) show_dependencies_menu ;;
+    5) show_desktop_menu ;;
     0) exit 0 ;;
     *)
         echo "Неверный выбор."
@@ -327,6 +383,7 @@ show_usage() {
     echo "    config         Manage configuration"
     echo "    strategy       Manage strategies"
     echo "    download-deps  Download/update dependencies (zapret + strategies)"
+    echo "    desktop        Manage desktop shortcut"
     echo "    run            Run interactively (without installing service)"
     echo
     echo "Internal commands:"
@@ -340,6 +397,7 @@ show_usage() {
     echo "    $(basename "$0") config set discord"
     echo "    $(basename "$0") strategy list"
     echo "    $(basename "$0") download-deps"
+    echo "    $(basename "$0") desktop install"
     echo "    $(basename "$0") run -s discord"
 }
 
@@ -435,7 +493,7 @@ handle_service_command() {
             check_service_status
             ;;
         install)
-            install_service
+            ensure_config_exists && install_service
             ;;
         remove)
             remove_service
@@ -547,6 +605,26 @@ handle_strategy_command() {
     esac
 }
 
+# Обработчик команды desktop
+handle_desktop_command() {
+    case "${1:-}" in
+        install)
+            create_desktop_shortcut
+            ;;
+        remove)
+            remove_desktop_shortcut
+            ;;
+        -h|--help|"")
+            show_desktop_usage
+            ;;
+        *)
+            echo "Unknown desktop command: $1"
+            show_desktop_usage
+            exit 1
+            ;;
+    esac
+}
+
 # Обработчик команды download-deps
 handle_download_deps_command() {
     local zapret_version=""
@@ -647,6 +725,10 @@ case "${1:-}" in
     download-deps)
         shift
         handle_download_deps_command "$@"
+        ;;
+    desktop)
+        shift
+        handle_desktop_command "$@"
         ;;
     run)
         shift

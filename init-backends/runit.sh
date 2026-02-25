@@ -23,21 +23,6 @@ check_service_status() {
 
 # Функция установки сервиса
 install_service() {
-    # Если конфиг отсутствует или неполный — создаём его интерактивно
-    if ! check_conf_file; then
-        read -p "Конфигурация отсутствует или неполная. Создать конфигурацию сейчас? (y/n): " answer
-        if [[ $answer =~ ^[Yy]$ ]]; then
-            create_conf_file
-        else
-            echo "Установка отменена."
-            return 1
-        fi
-        if ! check_conf_file; then
-            echo "Файл конфигурации всё ещё некорректен. Установка отменена."
-            return 1
-        fi
-    fi
-
     # Получение абсолютного пути
     local absolute_homedir_path
     absolute_homedir_path="$(realpath "$HOME_DIR_PATH")"

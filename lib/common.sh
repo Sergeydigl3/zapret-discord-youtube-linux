@@ -149,6 +149,25 @@ setup_repository() {
     "$BASE_DIR/rename_bat.sh" || handle_error "Ошибка при переименовании файлов"
 }
 
+# Проверка и создание конфига (helper для install_service и desktop)
+ensure_config_exists() {
+    if ! check_conf_file; then
+        read -p "Конфигурация отсутствует или неполная. Создать конфигурацию сейчас? (y/n): " answer
+        if [[ $answer =~ ^[Yy]$ ]]; then
+            create_conf_file
+        else
+            echo "Операция отменена."
+            return 1
+        fi
+        # Перепроверяем конфигурацию
+        if ! check_conf_file; then
+            echo "Файл конфигурации всё ещё некорректен. Операция отменена."
+            return 1
+        fi
+    fi
+    return 0
+}
+
 # Получение списка доступных стратегий (имена файлов)
 # Требует: REPO_DIR, CUSTOM_STRATEGIES_DIR
 get_strategies() {
