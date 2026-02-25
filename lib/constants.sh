@@ -4,6 +4,10 @@
 # Общие константы для всех скриптов zapret-discord-youtube-linux
 # =============================================================================
 
+# Guard: проверяем что файл не был уже загружен
+[[ -n "${_CONSTANTS_SH_LOADED:-}" ]] && return 0
+_CONSTANTS_SH_LOADED=1
+
 # Имя сервиса (используется во всех init-backends)
 SERVICE_NAME="zapret_discord_youtube"
 
@@ -20,3 +24,7 @@ GAME_FILTER_PORTS="1024-65535"
 # Репозиторий со стратегиями
 REPO_URL="https://github.com/Flowseal/zapret-discord-youtube"
 MAIN_REPO_REV="7952e58ee8b068b731d55d2ef8f491fd621d6ff0"
+
+# Репозиторий zapret (для nfqws)
+ZAPRET_REPO="bol-van/zapret"
+ZAPRET_RECOMMENDED_VERSION="v72.9"

@@ -11,6 +11,7 @@ NFQWS_PATH="$HOME_DIR_PATH/nfqws"
 # Подключаем общие библиотеки
 source "$HOME_DIR_PATH/lib/constants.sh"
 source "$HOME_DIR_PATH/lib/common.sh"
+source "$HOME_DIR_PATH/lib/download.sh"
 source "$HOME_DIR_PATH/init-backends/init.sh"
 
 # Функция для интерактивного создания файла конфигурации conf.env
@@ -402,16 +403,18 @@ show_run_usage() {
 show_download_deps_usage() {
     echo "Usage: $(basename "$0") download-deps [options]"
     echo
-    echo "Download/update zapret and strategies repositories."
+    echo "Download/update zapret (nfqws) and strategies repositories."
     echo
     echo "Options:"
-    echo "    -z, --zapret-version VER    Zapret version (default: latest)"
-    echo "    -s, --strat-version VER     Strategy version (default: latest)"
+    echo "    -d, --default               Use recommended versions (non-interactive)"
+    echo "    -z, --zapret-version VER    Zapret version (e.g., v72.9)"
+    echo "    -s, --strat-version VER     Strategy version (commit hash or tag)"
     echo "    -h, --help                  Show this help"
     echo
     echo "Examples:"
-    echo "    $(basename "$0") download-deps"
-    echo "    $(basename "$0") download-deps -z v1.0 -s v2.0"
+    echo "    $(basename "$0") download-deps                    # Interactive mode"
+    echo "    $(basename "$0") download-deps --default          # Use recommended versions"
+    echo "    $(basename "$0") download-deps -z v72.9 -s master   # Specific versions"
 }
 
 # Обработчик команды service
@@ -535,6 +538,7 @@ handle_download_deps_command() {
     local zapret_version=""
     local strat_version=""
     local interactive=true
+    local use_defaults=false
 
     # Парсинг аргументов
     while [[ $# -gt 0 ]]; do
@@ -548,6 +552,11 @@ handle_download_deps_command() {
                 strat_version="$2"
                 interactive=false
                 shift 2
+                ;;
+            -d|--default)
+                use_defaults=true
+                interactive=false
+                shift
                 ;;
             -h|--help)
                 show_download_deps_usage
@@ -563,28 +572,43 @@ handle_download_deps_command() {
 
     check_dependencies
 
+    # Режим с флагом --default
+    if [[ "$use_defaults" == true ]]; then
+        echo "Загрузка зависимостей (рекомендованные версии)"
+        echo ""
+        zapret_version="$ZAPRET_RECOMMENDED_VERSION"
+        strat_version="$MAIN_REPO_REV"
     # Интерактивный режим - спрашиваем версии
-    if [[ "$interactive" == true ]]; then
-        echo "Загрузка зависимостей (zapret + стратегии)"
+    elif [[ "$interactive" == true ]]; then
+        echo "Загрузка зависимостей (nfqws + стратегии)"
         echo ""
 
-        read -p "Версия zapret (оставьте пустым для latest): " zapret_version
-        read -p "Версия стратегий (оставьте пустым для latest): " strat_version
+        # Выбор версии zapret
+        select_zapret_version_interactive
+        zapret_version="$selected_zapret_version"
 
-        zapret_version="${zapret_version:-latest}"
-        strat_version="${strat_version:-latest}"
+        echo ""
+
+        # Выбор версии стратегий
+        select_strategy_version_interactive
+        strat_version="$selected_strat_version"
     else
-        zapret_version="${zapret_version:-latest}"
-        strat_version="${strat_version:-latest}"
+        zapret_version="${zapret_version:-$ZAPRET_RECOMMENDED_VERSION}"
+        strat_version="${strat_version:-$MAIN_REPO_REV}"
     fi
 
-    echo "Загрузка zapret (version: $zapret_version)..."
+    echo ""
+    echo "Загрузка nfqws (version: $zapret_version)..."
+    download_nfqws "$zapret_version"
+
+    echo ""
     echo "Загрузка стратегий (version: $strat_version)..."
 
-    # TODO: Передать версии в setup_repository
-    # Пока используем существующую логику
-    setup_repository
+    # Устанавливаем глобальный флаг интерактивности для setup_repository
+    INTERACTIVE_MODE="$interactive"
+    setup_repository "$strat_version"
 
+    echo ""
     echo "Зависимости успешно загружены."
 }
 

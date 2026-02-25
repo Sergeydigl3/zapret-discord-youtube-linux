@@ -4,10 +4,12 @@
 # Общие функции для всех скриптов zapret-discord-youtube-linux
 # =============================================================================
 
-# Подключаем константы если ещё не подключены
-if [[ -z "$SERVICE_NAME" ]]; then
-    source "$(dirname "${BASH_SOURCE[0]}")/constants.sh"
-fi
+# Guard: проверяем что файл не был уже загружен
+[[ -n "${_COMMON_SH_LOADED:-}" ]] && return 0
+_COMMON_SH_LOADED=1
+
+# Подключаем константы
+source "$(dirname "${BASH_SOURCE[0]}")/constants.sh"
 
 # Флаг отладки (можно переопределить в скрипте)
 DEBUG=${DEBUG:-false}
@@ -103,16 +105,45 @@ stop_nfqws() {
 # -----------------------------------------------------------------------------
 
 # Настройка репозитория со стратегиями
-# Требует: REPO_DIR, REPO_URL, MAIN_REPO_REV, BASE_DIR
+# Требует: REPO_DIR, REPO_URL, MAIN_REPO_REV, BASE_DIR, INTERACTIVE_MODE (опционально)
+# Аргументы:
+#   $1 - версия (коммит/тег/ветка), по умолчанию MAIN_REPO_REV
 setup_repository() {
+    local version="${1:-$MAIN_REPO_REV}"
+
     if [ -d "$REPO_DIR" ]; then
-        log "Использование существующей версии репозитория."
-        return
+        # В интерактивном режиме спрашиваем подтверждение
+        if [[ "${INTERACTIVE_MODE:-false}" == "true" ]]; then
+            log "Обнаружен существующий репозиторий стратегий."
+            read -p "Удалить существующий репозиторий и загрузить заново? [y/N]: " confirm
+            if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+                log "Использование существующей версии репозитория."
+                return 0
+            fi
+        fi
+
+        log "Удаление существующего репозитория..."
+        rm -rf "$REPO_DIR"
     fi
 
-    log "Клонирование репозитория..."
-    git clone "$REPO_URL" "$REPO_DIR" || handle_error "Ошибка при клонировании репозитория"
-    cd "$REPO_DIR" && git checkout "$MAIN_REPO_REV" && cd ..
+    log "Клонирование репозитория (версия: $version)..."
+
+    # Проверяем, является ли версия хешем коммита (40 символов hex)
+    if [[ "$version" =~ ^[0-9a-f]{40}$ ]]; then
+        # Для хеша коммита клонируем весь репозиторий и делаем checkout
+        git clone "$REPO_URL" "$REPO_DIR" || \
+            handle_error "Ошибка при клонировании репозитория"
+
+        cd "$REPO_DIR" || handle_error "Не удалось перейти в директорию $REPO_DIR"
+        git checkout "$version" || \
+            handle_error "Ошибка при переключении на коммит '$version'. Проверьте, что коммит существует."
+        cd - > /dev/null
+    else
+        # Для тега или ветки используем shallow clone
+        git clone --branch "$version" --depth 1 "$REPO_URL" "$REPO_DIR" || \
+            handle_error "Ошибка при клонировании репозитория. Проверьте, что версия '$version' существует."
+    fi
+
     chmod +x "$BASE_DIR/rename_bat.sh"
     rm -rf "$REPO_DIR/.git"
     "$BASE_DIR/rename_bat.sh" || handle_error "Ошибка при переименовании файлов"
