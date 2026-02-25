@@ -50,9 +50,9 @@ check_nft_rules_exist() {
 # Очистка
 cleanup() {
     print_status info "Финальная очистка..."
-    "$BASE_DIR/service.sh" --remove 2>/dev/null || true
+    "$BASE_DIR/service.sh" service remove 2>/dev/null || true
     sudo pkill -f nfqws 2>/dev/null || true
-    "$BASE_DIR/stop_and_clean_nft.sh" >/dev/null 2>&1 || true
+    "$BASE_DIR/service.sh" kill >/dev/null 2>&1 || true
 }
 
 # Создать тестовый конфиг
@@ -72,11 +72,11 @@ EOF
 test_install() {
     print_status info "Тест: установка сервиса..."
 
-    "$BASE_DIR/service.sh" --install
+    "$BASE_DIR/service.sh" service install
     sleep 2
 
     # Проверяем статус
-    if "$BASE_DIR/service.sh" --status 2>&1 | grep -q "активен"; then
+    if "$BASE_DIR/service.sh" service status 2>&1 | grep -q "активен"; then
         print_status ok "Сервис установлен и активен"
     else
         print_status fail "Сервис не активен после установки"
@@ -106,11 +106,11 @@ test_install() {
 test_stop() {
     print_status info "Тест: остановка сервиса..."
 
-    "$BASE_DIR/service.sh" --stop
+    "$BASE_DIR/service.sh" service stop
     sleep 1
 
     # Проверяем статус
-    if "$BASE_DIR/service.sh" --status 2>&1 | grep -q "не активен"; then
+    if "$BASE_DIR/service.sh" service status 2>&1 | grep -q "не активен"; then
         print_status ok "Сервис остановлен"
     else
         print_status fail "Сервис всё ещё активен"
@@ -131,11 +131,11 @@ test_stop() {
 test_start() {
     print_status info "Тест: запуск сервиса..."
 
-    "$BASE_DIR/service.sh" --start
+    "$BASE_DIR/service.sh" service start
     sleep 2
 
     # Проверяем статус
-    if "$BASE_DIR/service.sh" --status 2>&1 | grep -q "активен"; then
+    if "$BASE_DIR/service.sh" service status 2>&1 | grep -q "активен"; then
         print_status ok "Сервис запущен"
     else
         print_status fail "Сервис не запустился"
@@ -156,11 +156,11 @@ test_start() {
 test_restart() {
     print_status info "Тест: перезапуск сервиса..."
 
-    "$BASE_DIR/service.sh" --restart
+    "$BASE_DIR/service.sh" service restart
     sleep 2
 
     # Проверяем статус
-    if "$BASE_DIR/service.sh" --status 2>&1 | grep -q "активен"; then
+    if "$BASE_DIR/service.sh" service status 2>&1 | grep -q "активен"; then
         print_status ok "Сервис перезапущен"
     else
         print_status fail "Сервис не активен после перезапуска"
@@ -181,11 +181,11 @@ test_restart() {
 test_remove() {
     print_status info "Тест: удаление сервиса..."
 
-    "$BASE_DIR/service.sh" --remove
+    "$BASE_DIR/service.sh" service remove
     sleep 1
 
     # Проверяем статус
-    if "$BASE_DIR/service.sh" --status 2>&1 | grep -q "не установлен"; then
+    if "$BASE_DIR/service.sh" service status 2>&1 | grep -q "не установлен"; then
         print_status ok "Сервис удалён"
     else
         print_status fail "Сервис всё ещё установлен"
@@ -232,13 +232,13 @@ main() {
         exit 1
     fi
 
-    # Скачиваем стратегии
-    print_status info "Загрузка стратегий..."
-    "$BASE_DIR/service.sh" --download
+    # Скачиваем зависимости
+    print_status info "Загрузка зависимостей (nfqws + стратегии)..."
+    "$BASE_DIR/service.sh" download-deps --default
 
     # Получаем первую стратегию для теста
     local strategy
-    strategy=$("$BASE_DIR/service.sh" --strategies | grep -E '\.bat$' | head -1)
+    strategy=$("$BASE_DIR/service.sh" strategy list | grep -E '\.bat$' | head -1)
 
     if [ -z "$strategy" ]; then
         print_status fail "Стратегии не найдены!"

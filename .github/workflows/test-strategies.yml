@@ -19,11 +19,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y nftables git
 
-      - name: Download strategies
-        run: ./service.sh --download
+      - name: Download dependencies
+        run: ./service.sh download-deps --default
 
       - name: List available strategies
-        run: ./service.sh --strategies
+        run: ./service.sh strategy list
 
       - name: Run strategy tests
         run: sudo ./ci/test_strategies.sh

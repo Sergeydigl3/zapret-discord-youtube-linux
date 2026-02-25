@@ -73,12 +73,12 @@ check_nft_rules_exist() {
 cleanup() {
     print_status info "Очистка..."
     sudo pkill -f nfqws 2>/dev/null || true
-    "$BASE_DIR/stop_and_clean_nft.sh" >/dev/null 2>&1 || true
+    "$BASE_DIR/service.sh" kill >/dev/null 2>&1 || true
 }
 
-# Получить список стратегий через CLI (вызывать после --download)
+# Получить список стратегий через CLI (вызывать после download-deps)
 get_strategies_cli() {
-    "$BASE_DIR/service.sh" --strategies | grep -E '\.bat$' || true
+    "$BASE_DIR/service.sh" strategy list | grep -E '\.bat$' || true
 }
 
 # -----------------------------------------------------------------------------
@@ -115,16 +115,16 @@ gamefilter=false
 strategy=$strategy
 EOF
 
-    # 3. Запуск main_script в фоне
+    # 3. Запуск через service.sh run в фоне
     print_status info "Запуск стратегии..."
 
     # Копируем конфиг в conf.env
     cp "$tmp_conf" "$BASE_DIR/conf.env"
 
-    # Запускаем main_script
+    # Запускаем через service.sh run --config
     (
         cd "$BASE_DIR"
-        timeout 5 ./main_script.sh -nointeractive &
+        timeout 5 ./service.sh run --config "$BASE_DIR/conf.env" &
         PID=$!
         sleep 2
         kill $PID 2>/dev/null || true
@@ -206,9 +206,9 @@ main() {
         exit 1
     fi
 
-    # Скачиваем стратегии через CLI
-    print_status info "Загрузка стратегий..."
-    "$BASE_DIR/service.sh" --download
+    # Скачиваем зависимости через CLI
+    print_status info "Загрузка зависимостей (nfqws + стратегии)..."
+    "$BASE_DIR/service.sh" download-deps --default
 
     # Получаем список стратегий через CLI
     print_status info "Получение списка стратегий..."
