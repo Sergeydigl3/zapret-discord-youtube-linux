@@ -16,7 +16,14 @@ source "$HOME_DIR_PATH/init-backends/init.sh"
 
 # Функция для интерактивного создания файла конфигурации conf.env
 create_conf_file() {
-    echo "Конфигурация отсутствует или неполная. Создаем новый конфиг."
+    # Определяем режим работы
+    if [[ -f "$CONF_FILE" ]]; then
+        echo "Изменение конфигурации..."
+        local is_editing=true
+    else
+        echo "Конфигурация отсутствует или неполная. Создаем новый конфиг."
+        local is_editing=false
+    fi
 
     # 1. Выбор интерфейса
     local interfaces=("any" $(ls /sys/class/net))
@@ -50,21 +57,20 @@ interface=$chosen_interface
 gamefilter=$gamefilter_choice
 strategy=$strategy_choice
 EOF
-    echo "Конфигурация записана в $CONF_FILE."
-}
 
-edit_conf_file() {
-    echo "Изменение конфигурации..."
-    create_conf_file
-    echo "Конфигурация обновлена."
+    if [[ "$is_editing" == true ]]; then
+        echo "Конфигурация обновлена."
 
-    # Если сервис активен, предлагаем перезапустить
-    check_service_status >/dev/null 2>&1
-    if [ $? -eq 2 ]; then
-        read -p "Сервис активен. Перезапустить сервис для применения новых настроек? (Y/n): " answer
-        if [[ ${answer:-Y} =~ ^[Yy]$ ]]; then
-            restart_service
+        # Если сервис активен, предлагаем перезапустить
+        check_service_status >/dev/null 2>&1
+        if [ $? -eq 2 ]; then
+            read -p "Сервис активен. Перезапустить сервис для применения новых настроек? (Y/n): " answer
+            if [[ ${answer:-Y} =~ ^[Yy]$ ]]; then
+                restart_service
+            fi
         fi
+    else
+        echo "Конфигурация записана в $CONF_FILE."
     fi
 }
 
@@ -231,7 +237,7 @@ show_menu() {
     case $choice in
     1) run_zapret_command ;;
     2) show_service_menu ;;
-    3) edit_conf_file ;;
+    3) create_conf_file ;;
     0) exit 0 ;;
     *)
         echo "Неверный выбор."
@@ -464,7 +470,7 @@ handle_config_command() {
             show_config
             ;;
         edit)
-            edit_conf_file
+            create_conf_file
             ;;
         set)
             shift
