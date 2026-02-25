@@ -31,7 +31,14 @@ Ubuntu 24.04 • Debian 12 • Arch Linux • Gentoo Linux
 ## Быстрый старт
 
 ```bash
-git clone https://github.com/Sergeydigl3/zapret-discord-youtube-linux.git && cd zapret-discord-youtube-linux
+# Клонируем репозиторий
+git clone https://github.com/Sergeydigl3/zapret-discord-youtube-linux.git
+cd zapret-discord-youtube-linux
+
+# Скачиваем зависимости (nfqws + стратегии)
+sudo bash service.sh download-deps --default
+
+# Запускаем интерактивное меню
 sudo bash service.sh
 ```
 
@@ -43,20 +50,25 @@ sudo bash service.sh
 
 **Требования:**
 - Работает только с **nftables**
-- Поддерживается архитектура **x86_64** (для других архитектур замените бинарник nfqws на нужный)
+- Поддерживаемые архитектуры: **x86_64, ARM, MIPS, PowerPC, FreeBSD, macOS, Windows** (автоматическое определение)
 
 ---
 
 ## О версиях
 
-Адаптер использует стратегии с [этого коммита](https://github.com/Flowseal/zapret-discord-youtube/commit/7952e58ee8b068b731d55d2ef8f491fd621d6ff0) (прописано в `lib/constants.sh` как `MAIN_REPO_REV`). Можно изменить на другой коммит при необходимости.
+Адаптер по умолчанию использует:
+- **nfqws**: v72.9 (рекомендованная версия, прописана в `lib/constants.sh` как `ZAPRET_RECOMMENDED_VERSION`)
+- **Стратегии**: [коммит 7952e58](https://github.com/Flowseal/zapret-discord-youtube/commit/7952e58ee8b068b731d55d2ef8f491fd621d6ff0) (прописан в `lib/constants.sh` как `MAIN_REPO_REV`)
+
+Вы можете изменить версии:
+- Интерактивно: `sudo bash service.sh download-deps` (выбор из доступных версий)
+- Напрямую: `sudo bash service.sh download-deps -z v72.9 -s main`
+- В коде: отредактируйте константы в `lib/constants.sh`
 
 Если текущая версия не работает, попробуйте [стабильные релизы](https://github.com/Sergeydigl3/zapret-discord-youtube-linux/releases).
 
 **Сторонние проекты:**
 - [Версия от Snowy-Fluffy](https://github.com/Snowy-Fluffy/zapret.installer)
-
-> Обновляю скрипт редко, для поддержания работоспособности относительно версии для Win.
 
 ---
 
@@ -85,14 +97,83 @@ gamefilter=true
 
 ## Управление через CLI
 
-```bash
-sudo bash ./service.sh --help  # список команд
+### Основные команды
 
-# Примеры:
-sudo bash ./service.sh general.bat enp0s3      # установить стратегию и перезапустить
-sudo bash ./service.sh --gamefilter alt11      # с gamefilter
-sudo bash ./service.sh --run                   # запустить демон (используется сервисом)
-sudo bash ./service.sh --kill                  # остановить nfqws и очистить nftables
+```bash
+sudo bash ./service.sh --help  # показать справку по командам
+```
+
+### Управление зависимостями
+
+```bash
+# Скачать nfqws и стратегии (интерактивный выбор версий)
+sudo bash ./service.sh download-deps
+
+# Скачать рекомендованные версии (неинтерактивно)
+sudo bash ./service.sh download-deps --default
+
+# Скачать конкретные версии
+sudo bash ./service.sh download-deps -z v72.9 -s main
+
+# Показать доступные стратегии
+sudo bash ./service.sh strategy list
+```
+
+### Запуск zapret
+
+```bash
+# Интерактивный режим (запрос параметров)
+sudo bash ./service.sh run
+
+# Загрузка из конфигурационного файла
+sudo bash ./service.sh run --config conf.env
+
+# Прямые параметры
+sudo bash ./service.sh run -s general.bat -i enp0s3
+sudo bash ./service.sh run -s general.bat -i enp0s3 -g  # с gamefilter
+```
+
+### Управление системным сервисом
+
+```bash
+# Интерактивное меню управления сервисом
+sudo bash ./service.sh service
+
+# Установить и запустить сервис
+sudo bash ./service.sh service install
+
+# Показать статус
+sudo bash ./service.sh service status
+
+# Запустить/остановить/перезапустить
+sudo bash ./service.sh service start
+sudo bash ./service.sh service stop
+sudo bash ./service.sh service restart
+
+# Удалить сервис
+sudo bash ./service.sh service remove
+```
+
+### Управление конфигурацией
+
+```bash
+# Показать текущую конфигурацию
+sudo bash ./service.sh config show
+
+# Интерактивное редактирование
+sudo bash ./service.sh config edit
+
+# Установить конфигурацию напрямую
+sudo bash ./service.sh config set general.bat
+sudo bash ./service.sh config set general.bat enp0s3 -g  # с gamefilter
+sudo bash ./service.sh config set discord -n             # без перезапуска сервиса
+```
+
+### Утилиты
+
+```bash
+# Остановить nfqws и очистить nftables
+sudo bash ./service.sh kill
 ```
 
 ---
@@ -116,12 +197,17 @@ sudo bash auto_tune_youtube.sh
 ## Автозагрузка (системный сервис)
 
 ```bash
-sudo bash service.sh -i  # или через интерактивное меню
+# Через CLI
+sudo bash service.sh service install
+
+# Или через интерактивное меню
+sudo bash service.sh
+# -> выбрать "2. Управление сервисом" -> "1. Установить и запустить сервис"
 ```
 
 Скрипт:
 - Проверяет `conf.env` (если пустой — запросит параметры интерактивно)
-- Создаёт сервис для автозапуска
+- Создаёт сервис для автозапуска (поддерживает systemd, OpenRC, runit, s6, dinit)
 - Использует значения из `conf.env`
 
 <details>

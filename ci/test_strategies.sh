@@ -206,9 +206,14 @@ main() {
         exit 1
     fi
 
-    # Скачиваем зависимости через CLI
-    print_status info "Загрузка зависимостей (nfqws + стратегии)..."
-    "$BASE_DIR/service.sh" download-deps --default
+    # Проверяем, загружены ли уже зависимости
+    if [[ ! -d "$BASE_DIR/zapret-latest" ]] || [[ ! -f "$BASE_DIR/nfqws" ]]; then
+        # Скачиваем зависимости через CLI
+        print_status info "Загрузка зависимостей (nfqws + стратегии)..."
+        "$BASE_DIR/service.sh" download-deps --default
+    else
+        print_status info "Зависимости уже загружены, пропускаем загрузку..."
+    fi
 
     # Получаем список стратегий через CLI
     print_status info "Получение списка стратегий..."

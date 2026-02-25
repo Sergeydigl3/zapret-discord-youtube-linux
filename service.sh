@@ -40,8 +40,7 @@ create_conf_file() {
         gamefilter_choice="false"
     fi
 
-    # 3. Выбор стратегии (используем общие функции)
-    setup_repository
+    # 3. Выбор стратегии
     select_strategy_interactive
     local strategy_choice="$selected_strategy"
 
@@ -158,7 +157,13 @@ run_zapret_command() {
     done
 
     check_dependencies
-    setup_repository
+
+    # Проверяем наличие репозитория со стратегиями
+    if [[ ! -d "$REPO_DIR" ]]; then
+        echo "Ошибка: репозиторий со стратегиями не найден."
+        echo "Запустите: ./service.sh download-deps --default"
+        return 1
+    fi
 
     # Режим 1: Загрузка из конфига
     if [[ -n "$use_config" ]]; then
@@ -438,8 +443,11 @@ handle_service_command() {
         restart)
             restart_service
             ;;
-        -h|--help|"")
+        -h|--help)
             show_service_usage
+            ;;
+        "")
+            show_service_menu
             ;;
         *)
             echo "Unknown service command: $1"
