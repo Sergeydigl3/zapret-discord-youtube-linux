@@ -17,7 +17,6 @@ source "$HOME_DIR_PATH/src/lib/common.sh"
 source "$HOME_DIR_PATH/src/lib/download.sh"
 source "$HOME_DIR_PATH/src/lib/desktop.sh"
 source "$HOME_DIR_PATH/src/lib/permissions.sh"
-source "$HOME_DIR_PATH/src/init-backends/init.sh"
 
 # Подключаем CLI модули
 source "$HOME_DIR_PATH/src/cli/menu.sh"

@@ -4,6 +4,11 @@
 # CLI: Управление сервисом
 # =============================================================================
 
+# Ленивая загрузка init backend
+_load_init_backend() {
+    [[ -z "${INIT_SYS:-}" ]] && source "$HOME_DIR_PATH/src/init-backends/init.sh"
+}
+
 # Справка для service
 show_service_usage() {
     echo "Usage: $(basename "$0") service <command>"
@@ -19,6 +24,7 @@ show_service_usage() {
 
 # Подменю управления сервисом
 show_service_menu() {
+    _load_init_backend
     local status=0
     check_service_status || status=$?
 
@@ -62,6 +68,7 @@ show_service_menu() {
 
 # Обработчик команды service
 handle_service_command() {
+    _load_init_backend
     case "${1:-}" in
         status)
             check_service_status || true
