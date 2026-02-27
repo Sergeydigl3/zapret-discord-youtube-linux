@@ -40,6 +40,7 @@ show_menu() {
     echo "3. Изменить конфигурацию"
     echo "4. Управление зависимостями"
     echo "5. Управление desktop ярлыком"
+    echo "6. Настроить работу без пароля"
     echo "0. Выход"
     read -p "Выберите действие: " choice
     case $choice in
@@ -48,6 +49,7 @@ show_menu() {
     3) create_conf_file ;;
     4) show_dependencies_menu ;;
     5) show_desktop_menu ;;
+    6) setup_permissions ;;
     0) exit 0 ;;
     *)
         echo "Неверный выбор."
