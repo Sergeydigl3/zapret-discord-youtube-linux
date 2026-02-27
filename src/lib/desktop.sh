@@ -26,22 +26,14 @@ create_desktop_shortcut() {
 
     log "Создание системного ярлыка..."
 
-    # Определяем команду для повышения привилегий в desktop файле
-    local elevate_cmd="sudo"
-    if command -v pkexec >/dev/null 2>&1; then
-        elevate_cmd="pkexec"
-    elif command -v doas >/dev/null 2>&1 && doas -n true 2>/dev/null; then
-        elevate_cmd="doas"
-    fi
-
-    # Создаём desktop файл (используем heredoc без кавычек для подстановки переменных)
+    # Создаём desktop файл
     elevate tee "$desktop_file" > /dev/null <<EOF
 [Desktop Entry]
 Version=1.0
 Type=Application
 Name=Zapret Discord YouTube
 Comment=Обход замедления YouTube и Discord
-Exec=bash -c 'cd "${BASE_DIR}" && ${elevate_cmd} bash "${script_path}" daemon'
+Exec=bash -c 'cd "${BASE_DIR}" && bash "${script_path}" daemon'
 Icon=network-workgroup
 Terminal=true
 Categories=Network;System;
@@ -58,9 +50,7 @@ EOF
     echo "Системный ярлык создан: $desktop_file"
     echo "Ярлык доступен всем пользователям в меню системы"
     echo ""
-    echo "Примечание:"
-    echo "  - Для запуска потребуются права администратора"
-    echo "  - Ярлык использует настройки из conf.env"
+    echo "Для работы без пароля: ./service.sh setup-permissions"
 }
 
 # Функция удаления desktop ярлыка
