@@ -31,14 +31,14 @@ Ubuntu 24.04 • Debian 12 • Arch Linux • Gentoo Linux
 ## Быстрый старт
 
 ```bash
-# Клонируем репозиторий
 git clone https://github.com/Sergeydigl3/zapret-discord-youtube-linux.git
 cd zapret-discord-youtube-linux
 
-# Скачиваем зависимости (nfqws + стратегии)
 sudo bash service.sh download-deps --default
 
-# Запускаем интерактивное меню
+# Можно использовать команду ниже, чтобы выбрать версию стратегий и версию zapret
+# bash service.sh download-deps 
+
 sudo bash service.sh
 ```
 

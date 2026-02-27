@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 # Константы путей
 HOME_DIR_PATH="$(realpath "$(dirname "$0")")"
 BASE_DIR="$HOME_DIR_PATH"
