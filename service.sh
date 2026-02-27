@@ -67,8 +67,9 @@ EOF
         echo "Конфигурация обновлена."
 
         # Если сервис активен, предлагаем перезапустить
-        check_service_status >/dev/null 2>&1
-        if [ $? -eq 2 ]; then
+        local svc_status=0
+        check_service_status >/dev/null 2>&1 || svc_status=$?
+        if [ $svc_status -eq 2 ]; then
             read -p "Сервис активен. Перезапустить сервис для применения новых настроек? (Y/n): " answer
             if [[ ${answer:-Y} =~ ^[Yy]$ ]]; then
                 restart_service
@@ -81,8 +82,8 @@ EOF
 
 # Подменю управления сервисом
 show_service_menu() {
-    check_service_status
-    local status=$?
+    local status=0
+    check_service_status || status=$?
 
     echo ""
     case $status in
@@ -492,7 +493,7 @@ show_download_deps_usage() {
 handle_service_command() {
     case "${1:-}" in
         status)
-            check_service_status
+            check_service_status || true
             ;;
         install)
             ensure_config_exists && install_service
