@@ -21,58 +21,54 @@ create_desktop_shortcut() {
     # Проверяем и создаём конфиг если нужно
     ensure_config_exists || return 1
 
-    local desktop_file="$HOME/.local/share/applications/zapret-discord-youtube.desktop"
+    local desktop_file="/usr/share/applications/zapret-discord-youtube.desktop"
     local script_path="$BASE_DIR/service.sh"
 
-    # Создаём директорию если её нет
-    mkdir -p "$HOME/.local/share/applications" || handle_error "Не удалось создать директорию для ярлыков"
+    log "Создание системного ярлыка..."
 
-    log "Создание ярлыка..."
-
-    # Создаём desktop файл
-    cat > "$desktop_file" <<EOF
+    # Создаём desktop файл (используем heredoc без кавычек для подстановки переменных)
+    sudo tee "$desktop_file" > /dev/null <<EOF
 [Desktop Entry]
 Version=1.0
 Type=Application
 Name=Zapret Discord YouTube
 Comment=Обход замедления YouTube и Discord
-Exec=sudo -E bash -c 'cd "$BASE_DIR" && bash "$script_path" daemon'
+Exec=bash -c 'cd "${BASE_DIR}" && sudo bash "${script_path}" daemon'
 Icon=network-workgroup
 Terminal=true
 Categories=Network;System;
 Keywords=zapret;youtube;discord;dpi;
 EOF
 
-    chmod +x "$desktop_file" || handle_error "Не удалось установить права на ярлык"
+    sudo chmod +x "$desktop_file" || handle_error "Не удалось установить права на ярлык"
 
     # Обновляем базу desktop файлов если есть update-desktop-database
     if command -v update-desktop-database >/dev/null 2>&1; then
-        update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
+        sudo update-desktop-database /usr/share/applications 2>/dev/null || true
     fi
 
-    echo "✓ Ярлык создан: $desktop_file"
-    echo "✓ Теперь можно запустить приложение из меню системы"
+    echo "✓ Системный ярлык создан: $desktop_file"
+    echo "✓ Ярлык доступен всем пользователям в меню системы"
     echo ""
     echo "Примечание:"
     echo "  - Для запуска потребуются права sudo"
     echo "  - Ярлык использует настройки из conf.env"
-    echo "  - Убедитесь, что conf.env создан (через 'service.sh config edit')"
 }
 
 # Функция удаления desktop ярлыка
 remove_desktop_shortcut() {
-    local desktop_file="$HOME/.local/share/applications/zapret-discord-youtube.desktop"
+    local desktop_file="/usr/share/applications/zapret-discord-youtube.desktop"
 
     if [[ -f "$desktop_file" ]]; then
-        log "Удаление ярлыка..."
-        rm -f "$desktop_file" || handle_error "Не удалось удалить ярлык"
+        log "Удаление системного ярлыка..."
+        sudo rm -f "$desktop_file" || handle_error "Не удалось удалить ярлык"
 
         # Обновляем базу desktop файлов если есть update-desktop-database
         if command -v update-desktop-database >/dev/null 2>&1; then
-            update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
+            sudo update-desktop-database /usr/share/applications 2>/dev/null || true
         fi
 
-        echo "✓ Ярлык удалён: $desktop_file"
+        echo "✓ Системный ярлык удалён: $desktop_file"
     else
         echo "Ярлык не найден: $desktop_file"
     fi
@@ -95,8 +91,8 @@ show_desktop_usage() {
   # Удалить ярлык
   bash service.sh desktop remove
 
-После установки ярлык появится в меню приложений в категории "Сеть" или "Система".
+После установки системный ярлык появится в меню приложений всех пользователей
+в категории "Сеть" или "Система".
 При запуске откроется терминал и zapret запустится с настройками из conf.env.
-Убедитесь, что файл conf.env создан перед использованием ярлыка.
 EOF
 }
