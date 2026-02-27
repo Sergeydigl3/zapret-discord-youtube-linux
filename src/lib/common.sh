@@ -144,9 +144,9 @@ setup_repository() {
             handle_error "Ошибка при клонировании репозитория. Проверьте, что версия '$version' существует."
     fi
 
-    chmod +x "$BASE_DIR/rename_bat.sh"
+    chmod +x "$BASE_DIR/src/rename_bat.sh"
     rm -rf "$REPO_DIR/.git"
-    "$BASE_DIR/rename_bat.sh" || handle_error "Ошибка при переименовании файлов"
+    "$BASE_DIR/src/rename_bat.sh" || handle_error "Ошибка при переименовании файлов"
 }
 
 # Проверка и создание конфига (helper для install_service и desktop)
@@ -355,7 +355,7 @@ start_nfqws() {
 # Требует: REPO_DIR, NFQWS_PATH, STOP_SCRIPT
 run_zapret() {
     # Остановка предыдущего экземпляра
-    source "$BASE_DIR/lib/firewall.sh"
+    source "$BASE_DIR/src/lib/firewall.sh"
     stop_nfqws
     nft_clear
     sleep 1

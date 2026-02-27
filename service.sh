@@ -11,11 +11,11 @@ REPO_DIR="$HOME_DIR_PATH/zapret-latest"
 NFQWS_PATH="$HOME_DIR_PATH/nfqws"
 
 # Подключаем общие библиотеки
-source "$HOME_DIR_PATH/lib/constants.sh"
-source "$HOME_DIR_PATH/lib/common.sh"
-source "$HOME_DIR_PATH/lib/download.sh"
-source "$HOME_DIR_PATH/lib/desktop.sh"
-source "$HOME_DIR_PATH/init-backends/init.sh"
+source "$HOME_DIR_PATH/src/lib/constants.sh"
+source "$HOME_DIR_PATH/src/lib/common.sh"
+source "$HOME_DIR_PATH/src/lib/download.sh"
+source "$HOME_DIR_PATH/src/lib/desktop.sh"
+source "$HOME_DIR_PATH/src/init-backends/init.sh"
 
 check_dependencies
 

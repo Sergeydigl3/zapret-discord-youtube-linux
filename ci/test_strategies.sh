@@ -10,7 +10,7 @@ set -e
 BASE_DIR="$(realpath "$(dirname "$0")/..")"
 
 # Импортируем только константы
-source "$BASE_DIR/lib/constants.sh"
+source "$BASE_DIR/src/lib/constants.sh"
 
 # Цвета для вывода
 RED='\033[0;31m'
