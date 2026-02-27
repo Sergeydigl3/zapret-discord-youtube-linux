@@ -5,12 +5,12 @@ SERVICE_FILE="/etc/dinit.d/$SERVICE_NAME"
 
 # Функция для проверки статуса сервиса
 check_service_status() {
-    if ! sudo dinitctl list | grep -q "$SERVICE_NAME"; then
+    if ! elevate dinitctl list | grep -q "$SERVICE_NAME"; then
         echo "Статус: Сервис не установлен."
         return 1
     fi
 
-    if sudo dinitctl is-started "$SERVICE_NAME"; then
+    if elevate dinitctl is-started "$SERVICE_NAME"; then
         echo "Статус: Сервис установлен и активен."
         return 2
     else
@@ -28,7 +28,7 @@ install_service() {
     absolute_service_script_path="$absolute_homedir_path/service.sh"
 
     echo "Создание сервиса для автозагрузки..."
-    sudo bash -c "cat > $SERVICE_FILE" <<EOF
+    elevate bash -c "cat > $SERVICE_FILE" <<EOF
 type = process
 command = /usr/bin/env bash "$absolute_service_script_path" daemon
 stop-command = /usr/bin/env bash "$absolute_service_script_path" kill
@@ -38,25 +38,25 @@ restart = on-failure
 restart-delay = 0.5
 restart-limit-count = 4
 EOF
-    sudo dinitctl enable "$SERVICE_NAME"
+    elevate dinitctl enable "$SERVICE_NAME"
     echo "Сервис успешно установлен и запущен."
 }
 
 # Функция для удаления сервиса
 remove_service() {
     echo "Удаление сервиса..."
-    sudo dinitctl stop "$SERVICE_NAME"
-    sudo dinitctl disable "$SERVICE_NAME"
-    sudo dinitctl unload "$SERVICE_NAME"
+    elevate dinitctl stop "$SERVICE_NAME"
+    elevate dinitctl disable "$SERVICE_NAME"
+    elevate dinitctl unload "$SERVICE_NAME"
     sleep 1
-    sudo rm -f "$SERVICE_FILE"
+    elevate rm -f "$SERVICE_FILE"
     echo "Сервис удален."
 }
 
 # Функция для запуска сервиса
 start_service() {
     echo "Запуск сервиса..."
-    sudo dinitctl start "$SERVICE_NAME"
+    elevate dinitctl start "$SERVICE_NAME"
     echo "Сервис запущен."
     sleep 3
     check_nfqws_status
@@ -65,7 +65,7 @@ start_service() {
 # Функция для остановки сервиса
 stop_service() {
     echo "Остановка сервиса..."
-    sudo dinitctl stop "$SERVICE_NAME"
+    elevate dinitctl stop "$SERVICE_NAME"
     echo "Сервис остановлен."
 }
 

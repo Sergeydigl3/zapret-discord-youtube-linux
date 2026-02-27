@@ -26,32 +26,40 @@ create_desktop_shortcut() {
 
     log "Создание системного ярлыка..."
 
+    # Определяем команду для повышения привилегий в desktop файле
+    local elevate_cmd="sudo"
+    if command -v pkexec >/dev/null 2>&1; then
+        elevate_cmd="pkexec"
+    elif command -v doas >/dev/null 2>&1 && doas -n true 2>/dev/null; then
+        elevate_cmd="doas"
+    fi
+
     # Создаём desktop файл (используем heredoc без кавычек для подстановки переменных)
-    sudo tee "$desktop_file" > /dev/null <<EOF
+    elevate tee "$desktop_file" > /dev/null <<EOF
 [Desktop Entry]
 Version=1.0
 Type=Application
 Name=Zapret Discord YouTube
 Comment=Обход замедления YouTube и Discord
-Exec=bash -c 'cd "${BASE_DIR}" && sudo bash "${script_path}" daemon'
+Exec=bash -c 'cd "${BASE_DIR}" && ${elevate_cmd} bash "${script_path}" daemon'
 Icon=network-workgroup
 Terminal=true
 Categories=Network;System;
 Keywords=zapret;youtube;discord;dpi;
 EOF
 
-    sudo chmod +x "$desktop_file" || handle_error "Не удалось установить права на ярлык"
+    elevate chmod +x "$desktop_file" || handle_error "Не удалось установить права на ярлык"
 
     # Обновляем базу desktop файлов если есть update-desktop-database
     if command -v update-desktop-database >/dev/null 2>&1; then
-        sudo update-desktop-database /usr/share/applications 2>/dev/null || true
+        elevate update-desktop-database /usr/share/applications 2>/dev/null || true
     fi
 
-    echo "✓ Системный ярлык создан: $desktop_file"
-    echo "✓ Ярлык доступен всем пользователям в меню системы"
+    echo "Системный ярлык создан: $desktop_file"
+    echo "Ярлык доступен всем пользователям в меню системы"
     echo ""
     echo "Примечание:"
-    echo "  - Для запуска потребуются права sudo"
+    echo "  - Для запуска потребуются права администратора"
     echo "  - Ярлык использует настройки из conf.env"
 }
 
@@ -61,11 +69,11 @@ remove_desktop_shortcut() {
 
     if [[ -f "$desktop_file" ]]; then
         log "Удаление системного ярлыка..."
-        sudo rm -f "$desktop_file" || handle_error "Не удалось удалить ярлык"
+        elevate rm -f "$desktop_file" || handle_error "Не удалось удалить ярлык"
 
         # Обновляем базу desktop файлов если есть update-desktop-database
         if command -v update-desktop-database >/dev/null 2>&1; then
-            sudo update-desktop-database /usr/share/applications 2>/dev/null || true
+            elevate update-desktop-database /usr/share/applications 2>/dev/null || true
         fi
 
         echo "✓ Системный ярлык удалён: $desktop_file"

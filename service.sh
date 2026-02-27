@@ -11,6 +11,7 @@ REPO_DIR="$HOME_DIR_PATH/zapret-latest"
 NFQWS_PATH="$HOME_DIR_PATH/nfqws"
 
 # Подключаем библиотеки
+source "$HOME_DIR_PATH/src/lib/elevate.sh"
 source "$HOME_DIR_PATH/src/lib/constants.sh"
 source "$HOME_DIR_PATH/src/lib/common.sh"
 source "$HOME_DIR_PATH/src/lib/download.sh"

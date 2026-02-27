@@ -14,8 +14,18 @@ _INIT_BACKENDS_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 detect_init_system() {
     local comm exe exe_name
 
-    comm=$(sudo cat /proc/1/comm 2>/dev/null | tr -d '\n')
-    exe=$(sudo readlink -f /proc/1/exe 2>/dev/null)
+    # Пробуем без elevate, если не получится — с elevate
+    comm=$(cat /proc/1/comm 2>/dev/null | tr -d '\n')
+    exe=$(readlink -f /proc/1/exe 2>/dev/null)
+
+    # Если не удалось прочитать — пробуем с elevate
+    if [[ -z "$comm" ]]; then
+        comm=$(elevate cat /proc/1/comm 2>/dev/null | tr -d '\n')
+    fi
+    if [[ -z "$exe" ]]; then
+        exe=$(elevate readlink -f /proc/1/exe 2>/dev/null)
+    fi
+
     exe_name=$(basename "$exe" 2>/dev/null)
 
     # SYSTEMD

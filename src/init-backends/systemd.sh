@@ -28,7 +28,7 @@ install_service() {
     absolute_service_script_path="$absolute_homedir_path/service.sh"
 
     echo "Создание systemd сервиса для автозагрузки..."
-    sudo bash -c "cat > $SERVICE_FILE" <<EOF
+    elevate bash -c "cat > $SERVICE_FILE" <<EOF
 [Unit]
 Description=Custom Script Service
 After=network-online.target
@@ -46,26 +46,26 @@ PIDFile=/run/$SERVICE_NAME.pid
 [Install]
 WantedBy=multi-user.target
 EOF
-    sudo systemctl daemon-reload
-    sudo systemctl enable "$SERVICE_NAME"
-    sudo systemctl start "$SERVICE_NAME"
+    elevate systemctl daemon-reload
+    elevate systemctl enable "$SERVICE_NAME"
+    elevate systemctl start "$SERVICE_NAME"
     echo "Сервис успешно установлен и запущен."
 }
 
 # Функция для удаления сервиса
 remove_service() {
     echo "Удаление сервиса..."
-    sudo systemctl stop "$SERVICE_NAME"
-    sudo systemctl disable "$SERVICE_NAME"
-    sudo rm -f "$SERVICE_FILE"
-    sudo systemctl daemon-reload
+    elevate systemctl stop "$SERVICE_NAME"
+    elevate systemctl disable "$SERVICE_NAME"
+    elevate rm -f "$SERVICE_FILE"
+    elevate systemctl daemon-reload
     echo "Сервис удален."
 }
 
 # Функция для запуска сервиса
 start_service() {
     echo "Запуск сервиса..."
-    sudo systemctl start "$SERVICE_NAME"
+    elevate systemctl start "$SERVICE_NAME"
     echo "Сервис запущен."
     sleep 3
     check_nfqws_status
@@ -74,7 +74,7 @@ start_service() {
 # Функция для остановки сервиса
 stop_service() {
     echo "Остановка сервиса..."
-    sudo systemctl stop "$SERVICE_NAME"
+    elevate systemctl stop "$SERVICE_NAME"
     echo "Сервис остановлен."
 }
 

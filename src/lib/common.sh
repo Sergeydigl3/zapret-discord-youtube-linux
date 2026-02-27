@@ -97,7 +97,7 @@ check_nfqws_status() {
 
 # Остановка всех процессов nfqws
 stop_nfqws() {
-    sudo pkill -f nfqws 2>/dev/null || true
+    elevate pkill -f nfqws 2>/dev/null || true
 }
 
 # -----------------------------------------------------------------------------
@@ -342,7 +342,7 @@ start_nfqws() {
     done
 
     debug_log "Запуск nfqws с параметрами: $NFQWS_PATH --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params"
-    eval "sudo $NFQWS_PATH --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params" ||
+    eval "elevate $NFQWS_PATH --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params" ||
         handle_error "Ошибка при запуске nfqws"
 }
 

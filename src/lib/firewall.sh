@@ -44,19 +44,19 @@ nft_setup() {
     fi
 
     # Очищаем существующую таблицу
-    if sudo nft list tables 2>/dev/null | grep -q "$table"; then
-        sudo nft flush chain "$table" "$chain" 2>/dev/null
-        sudo nft delete chain "$table" "$chain" 2>/dev/null
-        sudo nft delete table "$table" 2>/dev/null
+    if elevate nft list tables 2>/dev/null | grep -q "$table"; then
+        elevate nft flush chain "$table" "$chain" 2>/dev/null
+        elevate nft delete chain "$table" "$chain" 2>/dev/null
+        elevate nft delete table "$table" 2>/dev/null
     fi
 
     # Создаём таблицу и цепочку
-    sudo nft add table "$table"
-    sudo nft add chain "$table" "$chain" { type filter hook output priority 0\; }
+    elevate nft add table "$table"
+    elevate nft add chain "$table" "$chain" { type filter hook output priority 0\; }
 
     # Добавляем TCP правило
     if [[ -n "$tcp_ports" ]]; then
-        sudo nft add rule "$table" "$chain" $oif_clause \
+        elevate nft add rule "$table" "$chain" $oif_clause \
             meta mark != "$mark" tcp dport "{$tcp_ports}" \
             counter queue num "$queue_num" bypass \
             comment "\"$comment\""
@@ -64,7 +64,7 @@ nft_setup() {
 
     # Добавляем UDP правило
     if [[ -n "$udp_ports" ]]; then
-        sudo nft add rule "$table" "$chain" $oif_clause \
+        elevate nft add rule "$table" "$chain" $oif_clause \
             meta mark != "$mark" udp dport "{$udp_ports}" \
             counter queue num "$queue_num" bypass \
             comment "\"$comment\""
@@ -82,11 +82,11 @@ nft_clear() {
     local table="${1:-$NFT_TABLE}"
     local chain="${2:-$NFT_CHAIN}"
 
-    if sudo nft list tables 2>/dev/null | grep -q "$table"; then
-        if sudo nft list chain "$table" "$chain" >/dev/null 2>&1; then
-            sudo nft flush chain "$table" "$chain" 2>/dev/null
-            sudo nft delete chain "$table" "$chain" 2>/dev/null
+    if elevate nft list tables 2>/dev/null | grep -q "$table"; then
+        if elevate nft list chain "$table" "$chain" >/dev/null 2>&1; then
+            elevate nft flush chain "$table" "$chain" 2>/dev/null
+            elevate nft delete chain "$table" "$chain" 2>/dev/null
         fi
-        sudo nft delete table "$table" 2>/dev/null
+        elevate nft delete table "$table" 2>/dev/null
     fi
 }

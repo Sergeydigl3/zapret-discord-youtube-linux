@@ -21,9 +21,9 @@ check_service_status() {
 }
 
 create_logrotate_conf() {
-    sudo mkdir -p /etc/logrotate.d
+    elevate mkdir -p /etc/logrotate.d
 
-    sudo bash -c "cat > /etc/logrotate.d/$SERVICE_NAME" <<EOF
+    elevate bash -c "cat > /etc/logrotate.d/$SERVICE_NAME" <<EOF
 /var/log/$SERVICE_NAME.log {
     daily
     rotate 7
@@ -36,7 +36,7 @@ create_logrotate_conf() {
 }
 EOF
 
-sudo chmod 0644 /etc/logrotate.d/$SERVICE_NAME
+elevate chmod 0644 /etc/logrotate.d/$SERVICE_NAME
 }
 
 # Функция для установки сервиса
@@ -48,7 +48,7 @@ install_service() {
     absolute_service_script_path="$absolute_homedir_path/service.sh"
 
     echo "Создание openrc сервиса для автозагрузки..."
-    sudo bash -c "cat > $SERVICE_FILE" <<EOF
+    elevate bash -c "cat > $SERVICE_FILE" <<EOF
 #!/sbin/openrc-run
 # /etc/init.d/$SERVICE_NAME
 
@@ -103,25 +103,25 @@ logs() {
 }
 EOF
     create_logrotate_conf
-    sudo chmod +x "$SERVICE_FILE"
-    sudo rc-update add "$SERVICE_NAME" default
-    sudo rc-service "$SERVICE_NAME" restart
+    elevate chmod +x "$SERVICE_FILE"
+    elevate rc-update add "$SERVICE_NAME" default
+    elevate rc-service "$SERVICE_NAME" restart
     echo "Сервис успешно установлен и запущен."
 }
 
 # Функция для удаления сервиса
 remove_service() {
     echo "Удаление сервиса..."
-    sudo rc-service "$SERVICE_NAME" stop
-    sudo rc-update del "$SERVICE_NAME" default
-    sudo rm -f "$SERVICE_FILE"
+    elevate rc-service "$SERVICE_NAME" stop
+    elevate rc-update del "$SERVICE_NAME" default
+    elevate rm -f "$SERVICE_FILE"
     echo "Сервис удален."
 }
 
 # Функция для запуска сервиса
 start_service() {
     echo "Запуск сервиса..."
-    sudo rc-service "$SERVICE_NAME" restart
+    elevate rc-service "$SERVICE_NAME" restart
     echo "Сервис запущен."
     sleep 3
     check_nfqws_status
@@ -130,7 +130,7 @@ start_service() {
 # Функция для остановки сервиса
 stop_service() {
     echo "Остановка сервиса..."
-    sudo rc-service "$SERVICE_NAME" stop
+    elevate rc-service "$SERVICE_NAME" stop
     echo "Сервис остановлен."
     $STOP_SCRIPT
 }
