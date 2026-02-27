@@ -16,6 +16,7 @@ source "$HOME_DIR_PATH/src/lib/constants.sh"
 source "$HOME_DIR_PATH/src/lib/common.sh"
 source "$HOME_DIR_PATH/src/lib/download.sh"
 source "$HOME_DIR_PATH/src/lib/desktop.sh"
+source "$HOME_DIR_PATH/src/lib/permissions.sh"
 source "$HOME_DIR_PATH/src/init-backends/init.sh"
 
 # Подключаем CLI модули
@@ -26,6 +27,7 @@ source "$HOME_DIR_PATH/src/cli/strategy.sh"
 source "$HOME_DIR_PATH/src/cli/download.sh"
 source "$HOME_DIR_PATH/src/cli/desktop.sh"
 source "$HOME_DIR_PATH/src/cli/run.sh"
+source "$HOME_DIR_PATH/src/cli/permissions.sh"
 
 check_dependencies
 
@@ -60,6 +62,10 @@ case "${1:-}" in
         ;;
     kill)
         stop_zapret
+        ;;
+    setup-permissions)
+        shift
+        handle_permissions_command "$@"
         ;;
     -h|--help|help)
         show_usage

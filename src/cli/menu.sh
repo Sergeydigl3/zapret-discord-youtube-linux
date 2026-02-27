@@ -15,6 +15,7 @@ show_usage() {
     echo "    download-deps  Download/update dependencies (zapret + strategies)"
     echo "    desktop        Manage desktop shortcut"
     echo "    run            Run interactively (without installing service)"
+    echo "    setup-permissions  Setup NOPASSWD for nft/nfqws"
     echo
     echo "Internal commands:"
     echo "    daemon         Run zapret daemon (called by service)"
