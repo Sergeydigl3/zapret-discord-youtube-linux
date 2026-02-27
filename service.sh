@@ -17,6 +17,8 @@ source "$HOME_DIR_PATH/lib/download.sh"
 source "$HOME_DIR_PATH/lib/desktop.sh"
 source "$HOME_DIR_PATH/init-backends/init.sh"
 
+check_dependencies
+
 # Функция для интерактивного создания файла конфигурации conf.env
 create_conf_file() {
     # Определяем режим работы
@@ -215,8 +217,6 @@ run_zapret_command() {
                 ;;
         esac
     done
-
-    check_dependencies
 
     # Проверяем наличие репозитория со стратегиями
     if [[ ! -d "$REPO_DIR" ]]; then
@@ -663,8 +663,6 @@ handle_download_deps_command() {
                 ;;
         esac
     done
-
-    check_dependencies
 
     # Режим с флагом --default
     if [[ "$use_defaults" == true ]]; then
