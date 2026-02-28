@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+# SERVICE_NAME берётся из lib/constants.sh (подключается в service.sh)
+SERVICE_FILE="/etc/dinit.d/$SERVICE_NAME"
+
+# Функция для проверки статуса сервиса
+check_service_status() {
+    if ! elevate dinitctl list | grep -q "$SERVICE_NAME"; then
+        echo "Статус: Сервис не установлен."
+        return 1
+    fi
+
+    if elevate dinitctl is-started "$SERVICE_NAME"; then
+        echo "Статус: Сервис установлен и активен."
+        return 2
+    else
+        echo "Статус: Сервис установлен, но не активен."
+        return 3
+    fi
+}
+
+# Функция для установки сервиса
+install_service() {
+    # Получение абсолютного пути
+    local absolute_homedir_path
+    absolute_homedir_path="$(realpath "$HOME_DIR_PATH")"
+    local absolute_service_script_path
+    absolute_service_script_path="$absolute_homedir_path/service.sh"
+
+    echo "Создание сервиса для автозагрузки..."
+    elevate bash -c "cat > $SERVICE_FILE" <<EOF
+type = process
+command = /usr/bin/env bash "$absolute_service_script_path" daemon
+stop-command = /usr/bin/env bash "$absolute_service_script_path" kill
+# depends-on = network
+
+restart = on-failure
+restart-delay = 0.5
+restart-limit-count = 4
+EOF
+    elevate dinitctl enable "$SERVICE_NAME"
+    echo "Сервис успешно установлен и запущен."
+}
+
+# Функция для удаления сервиса
+remove_service() {
+    echo "Удаление сервиса..."
+    elevate dinitctl stop "$SERVICE_NAME"
+    elevate dinitctl disable "$SERVICE_NAME"
+    elevate dinitctl unload "$SERVICE_NAME"
+    sleep 1
+    elevate rm -f "$SERVICE_FILE"
+    echo "Сервис удален."
+}
+
+# Функция для запуска сервиса
+start_service() {
+    echo "Запуск сервиса..."
+    elevate dinitctl start "$SERVICE_NAME"
+    echo "Сервис запущен."
+    sleep 3
+    check_nfqws_status
+}
+
+# Функция для остановки сервиса
+stop_service() {
+    echo "Остановка сервиса..."
+    elevate dinitctl stop "$SERVICE_NAME"
+    echo "Сервис остановлен."
+}
+
+# Функция для перезапуска сервиса
+restart_service() {
+    stop_service
+    sleep 1
+    start_service
+}

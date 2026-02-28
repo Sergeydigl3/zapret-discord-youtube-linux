@@ -10,10 +10,9 @@
 # ═══════════════════════════════════════════════════════════
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MAIN_SCRIPT="$SCRIPT_DIR/main_script.sh"
-STOP_SCRIPT="$SCRIPT_DIR/stop_and_clean_nft.sh"
+SERVICE_SCRIPT="$SCRIPT_DIR/service.sh"
 REPO_DIR="$SCRIPT_DIR/zapret-latest"
-CUSTOM_DIR="$SCRIPT_DIR/custom-strategies"
+CUSTOM_STRATEGIES_DIR="$SCRIPT_DIR/custom-strategies"
 CONF_FILE="$SCRIPT_DIR/conf.env"
 RESULTS_FILE="$SCRIPT_DIR/auto_tune_youtube_results.txt"
 
@@ -44,18 +43,10 @@ FAILED_COUNT=0
 
 # Загрузить список стратегий (порядок как в main_script.sh)
 load_strategy_files() {
-    # 1. Кастомные стратегии
-    if [[ -d "$CUSTOM_DIR" ]]; then
-        for file in "$CUSTOM_DIR"/*.bat; do
-            [[ -f "$file" ]] && STRATEGY_FILES+=("$(basename "$file")")
-        done
-    fi
-    # 2. Стандартные из репозитория
-    if [[ -d "$REPO_DIR" ]]; then
-        while IFS= read -r -d '' file; do
-            STRATEGY_FILES+=("$(basename "$file")")
-        done < <(find "$REPO_DIR" -maxdepth 1 -type f \( -name "general*.bat" -o -name "discord.bat" \) -print0)
-    fi
+    # Загружаем список стратегий через service.sh
+    local strategies
+    mapfile -t strategies < <("$SERVICE_SCRIPT" strategy list | grep -E '\.bat$')
+    STRATEGY_FILES=("${strategies[@]}")
 }
 
 # Получить имя стратегии по номеру (1-based)
@@ -80,21 +71,21 @@ get_name_from_entry() {
 # ═══════════════════════════════════════════════════════════
 
 stop_zapret() {
-    sudo "$STOP_SCRIPT" 2>/dev/null
+    "$SERVICE_SCRIPT" kill 2>/dev/null
     sleep 1
 }
 
 run_strategy() {
-    local num=$1
-    # Передаём: y (подтверждение), номер стратегии, 1 (any интерфейс)
-    printf "y\n%d\n1\n" "$num" | "$MAIN_SCRIPT" &
+    local strategy_name="$1"
+    # Запускаем через service.sh run с параметрами
+    "$SERVICE_SCRIPT" run -s "$strategy_name" -i any >/dev/null 2>&1 &
     sleep "$WAIT_TIME"
 }
 
-# Запустить main с стратегией (не в фоне, для постоянного использования)
-launch_main_script() {
-    local num=$1
-    printf "y\n%d\n1\n" "$num" | "$MAIN_SCRIPT"
+# Запустить service.sh run с стратегией (не в фоне, для постоянного использования)
+launch_strategy() {
+    local strategy_name="$1"
+    "$SERVICE_SCRIPT" run -s "$strategy_name" -i any
 }
 
 # ═══════════════════════════════════════════════════════════
@@ -247,12 +238,12 @@ if ! command -v curl &>/dev/null; then
     echo "❌ curl не установлен. Установите: sudo apt install curl"
     exit 1
 fi
-if [[ ! -f "$MAIN_SCRIPT" ]]; then
-    echo "❌ main_script.sh не найден"
+if [[ ! -f "$SERVICE_SCRIPT" ]]; then
+    echo "❌ service.sh не найден"
     exit 1
 fi
 if [[ $MAX_STRATEGY -eq 0 ]]; then
-    echo "❌ Стратегии не найдены"
+    echo "❌ Стратегии не найдены. Запустите: ./service.sh download-deps --default"
     exit 1
 fi
 
@@ -277,8 +268,8 @@ stop_zapret
 for ((i=1; i<=MAX_STRATEGY; i++)); do
     name=$(get_strategy_name $i)
     printf "  ${BOLD}[%2d/%d]${NC} %-40s " "$i" "$MAX_STRATEGY" "$name"
-        
-    run_strategy $i >/dev/null 2>&1
+
+    run_strategy "$name" >/dev/null 2>&1
     ((TESTED_COUNT++))
     
     result=$(test_strategy)
@@ -339,7 +330,7 @@ if [[ $SUCCESS_COUNT -gt 0 ]]; then
             echo "❌ Стратегия #$num не найдена среди рабочих"
         fi
     elif [[ "$input" =~ ^[0-9]+$ ]]; then
-        # Просто число - запустить main с этой стратегией
+        # Просто число - запустить стратегию через service.sh
         num="$input"
         found=false
         for entry in "${WORKING_STRATEGIES[@]}"; do
@@ -349,7 +340,7 @@ if [[ $SUCCESS_COUNT -gt 0 ]]; then
                 echo ""
                 echo "🚀 Запускаем стратегию [$num] $name..."
                 stop_zapret >/dev/null 2>&1
-                launch_main_script "$num"
+                launch_strategy "$name"
                 found=true
                 break
             fi
