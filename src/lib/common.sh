@@ -360,8 +360,8 @@ start_nfqws() {
         full_params="$full_params $params"
     done
 
-    debug_log "Запуск nfqws с параметрами: $NFQWS_PATH --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params"
-    eval "elevate $NFQWS_PATH --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params" ||
+    debug_log "Запуск nfqws с параметрами: $NFQWS_PATH --user=root --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params"
+    eval "elevate $NFQWS_PATH --user=root --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params" ||
         handle_error "Ошибка при запуске nfqws"
 }
 
