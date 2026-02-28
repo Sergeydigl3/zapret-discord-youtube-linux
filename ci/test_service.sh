@@ -10,7 +10,7 @@ BASE_DIR="$(realpath "$(dirname "$0")/..")"
 
 # Ожидаемые значения для проверки
 EXPECTED_NFT_TABLE="inet zapretunix"
-EXPECTED_NFT_CHAIN="output"
+EXPECTED_NFT_CHAIN="zapret_common"
 EXPECTED_NFT_COMMENT="Added by zapret script"
 
 # Цвета для вывода
@@ -204,8 +204,16 @@ test_remove() {
         return 1
     fi
 
-    # Проверяем nftables
-    if ! check_nft_rules_exist; then
+    # Проверяем nftables (обе таблицы должны быть удалены)
+    local tables_exist=false
+    if sudo nft list tables 2>/dev/null | grep -q "inet zapretunix"; then
+        tables_exist=true
+    fi
+    if sudo nft list tables 2>/dev/null | grep -q "ip zapretunix"; then
+        tables_exist=true
+    fi
+
+    if ! $tables_exist; then
         print_status ok "nftables правила очищены"
     else
         print_status fail "nftables правила всё ещё существуют"

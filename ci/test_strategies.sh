@@ -11,7 +11,7 @@ BASE_DIR="$(realpath "$(dirname "$0")/..")"
 
 # Ожидаемые значения для проверки
 EXPECTED_NFT_TABLE="inet zapretunix"
-EXPECTED_NFT_CHAIN="output"
+EXPECTED_NFT_CHAIN="zapret_common"
 EXPECTED_NFT_COMMENT="Added by zapret script"
 
 # Цвета для вывода
@@ -55,7 +55,11 @@ check_nfqws_running() {
 
 # Проверка что nftables правила НЕ существуют
 check_nft_rules_not_exist() {
-    if sudo nft list tables 2>/dev/null | grep -q "$EXPECTED_NFT_TABLE"; then
+    # Проверяем обе возможные таблицы (inet и ip для router mode)
+    if sudo nft list tables 2>/dev/null | grep -q "inet zapretunix"; then
+        return 1
+    fi
+    if sudo nft list tables 2>/dev/null | grep -q "ip zapretunix"; then
         return 1
     fi
     return 0
