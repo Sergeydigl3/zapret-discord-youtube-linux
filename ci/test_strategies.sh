@@ -9,8 +9,10 @@ set -e
 
 BASE_DIR="$(realpath "$(dirname "$0")/..")"
 
-# Импортируем только константы
-source "$BASE_DIR/src/lib/constants.sh"
+# Ожидаемые значения для проверки
+EXPECTED_NFT_TABLE="inet zapretunix"
+EXPECTED_NFT_CHAIN="output"
+EXPECTED_NFT_COMMENT="Added by zapret script"
 
 # Цвета для вывода
 RED='\033[0;31m'
@@ -53,7 +55,7 @@ check_nfqws_running() {
 
 # Проверка что nftables правила НЕ существуют
 check_nft_rules_not_exist() {
-    if sudo nft list tables 2>/dev/null | grep -q "zapretunix"; then
+    if sudo nft list tables 2>/dev/null | grep -q "$EXPECTED_NFT_TABLE"; then
         return 1
     fi
     return 0
@@ -61,8 +63,8 @@ check_nft_rules_not_exist() {
 
 # Проверка что nftables правила существуют
 check_nft_rules_exist() {
-    if sudo nft list tables 2>/dev/null | grep -q "zapretunix"; then
-        if sudo nft list chain $NFT_TABLE $NFT_CHAIN 2>/dev/null | grep -q "$NFT_RULE_COMMENT"; then
+    if sudo nft list tables 2>/dev/null | grep -q "$EXPECTED_NFT_TABLE"; then
+        if sudo nft list chain "$EXPECTED_NFT_TABLE" "$EXPECTED_NFT_CHAIN" 2>/dev/null | grep -q "$EXPECTED_NFT_COMMENT"; then
             return 0
         fi
     fi
@@ -108,7 +110,8 @@ test_strategy() {
     fi
 
     # 2. Создаём временный конфиг
-    local tmp_conf=$(mktemp)
+    local tmp_conf
+    tmp_conf=$(mktemp --suffix=.env)
     cat > "$tmp_conf" <<EOF
 interface=any
 gamefilter=false
@@ -118,27 +121,23 @@ EOF
     # 3. Запуск через service.sh run в фоне
     print_status info "Запуск стратегии..."
 
-    # Копируем конфиг в conf.env
-    cp "$tmp_conf" "$BASE_DIR/conf.env"
+    # Запускаем в фоне и мониторим вывод
+    local log_file
+    log_file=$(mktemp)
+    (cd "$BASE_DIR" && timeout 10 ./service.sh run --config "$tmp_conf" > "$log_file" 2>&1) &
+    local run_pid=$!
 
-    # Запускаем через service.sh run --config
-    (
-        cd "$BASE_DIR"
-        timeout 5 ./service.sh run --config "$BASE_DIR/conf.env" &
-        PID=$!
-        sleep 2
-        kill $PID 2>/dev/null || true
-    ) 2>&1 &
-    local bg_pid=$!
-
-    # Ждём немного чтобы процесс запустился
-    sleep 2
+    # Ждём сообщения "Настройка успешно завершена" с tail (без polling)
+    timeout 5 tail -f "$log_file" 2>/dev/null | grep -q "Настройка успешно завершена" || true
 
     # 4. Проверка что nfqws запустился
     if check_nfqws_running; then
         print_status ok "nfqws запущен"
     else
         print_status fail "nfqws НЕ запущен"
+        echo "--- Лог запуска ---"
+        cat "$log_file"
+        echo "-------------------"
         test_passed=false
     fi
 
@@ -147,17 +146,18 @@ EOF
         print_status ok "nftables правила созданы"
     else
         print_status fail "nftables правила НЕ созданы"
+        echo "--- Лог запуска ---"
+        cat "$log_file"
+        echo "-------------------"
         test_passed=false
     fi
 
     # 6. Остановка
     print_status info "Остановка..."
+    kill $run_pid 2>/dev/null || true
+    wait $run_pid 2>/dev/null || true
     cleanup
-
-    # Ждём завершения фонового процесса
-    wait $bg_pid 2>/dev/null || true
-
-    sleep 0.5
+    rm -f "$log_file"
 
     # 7. Проверка что всё остановлено
     if check_nfqws_not_running; then

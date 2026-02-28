@@ -8,8 +8,10 @@ set -e
 
 BASE_DIR="$(realpath "$(dirname "$0")/..")"
 
-# Импортируем только константы
-source "$BASE_DIR/src/lib/constants.sh"
+# Ожидаемые значения для проверки
+EXPECTED_NFT_TABLE="inet zapretunix"
+EXPECTED_NFT_CHAIN="output"
+EXPECTED_NFT_COMMENT="Added by zapret script"
 
 # Цвета для вывода
 RED='\033[0;31m'
@@ -40,8 +42,8 @@ check_nfqws_running() {
 
 # Проверка что nftables правила существуют
 check_nft_rules_exist() {
-    if sudo nft list tables 2>/dev/null | grep -q "zapretunix"; then
-        sudo nft list chain $NFT_TABLE $NFT_CHAIN 2>/dev/null | grep -q "$NFT_RULE_COMMENT"
+    if sudo nft list tables 2>/dev/null | grep -q "$EXPECTED_NFT_TABLE"; then
+        sudo nft list chain "$EXPECTED_NFT_TABLE" "$EXPECTED_NFT_CHAIN" 2>/dev/null | grep -q "$EXPECTED_NFT_COMMENT"
         return $?
     fi
     return 1
