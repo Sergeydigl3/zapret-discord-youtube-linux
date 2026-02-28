@@ -147,6 +147,25 @@ setup_repository() {
     chmod +x "$BASE_DIR/src/rename_bat.sh"
     rm -rf "$REPO_DIR/.git"
     "$BASE_DIR/src/rename_bat.sh" || handle_error "Ошибка при переименовании файлов"
+
+    # Создаём пользовательские списки (только если в стратегиях есть директория lists)
+    if [[ -d "$REPO_DIR/lists" ]]; then
+        local user_lists_dir="$BASE_DIR/user-lists"
+        mkdir -p "$user_lists_dir"
+        touch "$user_lists_dir/ipset-exclude-user.txt"
+        touch "$user_lists_dir/list-general-user.txt"
+        touch "$user_lists_dir/list-exclude-user.txt"
+
+        # Делаем файлы читаемыми для всех (nfqws запускается под nobody)
+        chmod 644 "$user_lists_dir/ipset-exclude-user.txt"
+        chmod 644 "$user_lists_dir/list-general-user.txt"
+        chmod 644 "$user_lists_dir/list-exclude-user.txt"
+
+        # Создаём хардлинки (не симлинки!) чтобы обойти проблемы с доступом к /home/user
+        ln -f "$user_lists_dir/ipset-exclude-user.txt" "$REPO_DIR/lists/" 2>/dev/null || true
+        ln -f "$user_lists_dir/list-general-user.txt" "$REPO_DIR/lists/" 2>/dev/null || true
+        ln -f "$user_lists_dir/list-exclude-user.txt" "$REPO_DIR/lists/" 2>/dev/null || true
+    fi
 }
 
 # Проверка и создание конфига (helper для install_service и desktop)

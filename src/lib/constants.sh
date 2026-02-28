@@ -23,7 +23,7 @@ GAME_FILTER_PORTS="1024-65535"
 
 # Репозиторий со стратегиями
 REPO_URL="https://github.com/Flowseal/zapret-discord-youtube"
-MAIN_REPO_REV="7952e58ee8b068b731d55d2ef8f491fd621d6ff0"
+MAIN_REPO_REV="cb9aed09449e1c51a9108c7989717c7c98a14301"
 
 # Репозиторий zapret (для nfqws)
 ZAPRET_REPO="bol-van/zapret"
