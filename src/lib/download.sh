@@ -182,10 +182,7 @@ select_zapret_version_interactive() {
         3)
             read -p "Введите версию (тег): " selected_zapret_version
             if [[ -z "$selected_zapret_version" ]]; then
-                echo -e "\nВерсия не может быть пустой!\n"
-                sleep 0.7
-                select_zapret_version_interactive
-                return 0
+                handle_error "Версия не может быть пустой!"
             fi
             ;;
         4)
@@ -194,10 +191,7 @@ select_zapret_version_interactive() {
             tags=$(get_git_tags "https://github.com/${ZAPRET_REPO}")
 
             if [[ -z "$tags" ]]; then
-                echo -e "\nНе удалось получить теги\n"
-                sleep 0.7
-                select_zapret_version_interactive
-                return 0
+                handle_error "Теги не найдены в репозитории"
             fi
 
             # Преобразуем в массив
@@ -207,10 +201,7 @@ select_zapret_version_interactive() {
             done <<< "$tags"
 
             if [[ ${#tag_array[@]} -eq 0 ]]; then
-                echo -e "\nТеги не найдены\n"
-                sleep 0.7
-                select_zapret_version_interactive
-                return 0
+                handle_error "Теги не найдены в репозитории"
             fi
 
             # Формируем финальный список с рекомендованной версией первой
@@ -239,13 +230,11 @@ select_zapret_version_interactive() {
             done
             ;;
         5)
+            echo -e "Пропуск загрузки nfqws\n"
             return 0
             ;;
         *)  
-            echo -e "\nТакого варианта нет\n"
-            sleep 0.7
-            select_zapret_version_interactive
-            return 0
+            handle_error "Такого варианта нет"
             ;;
     esac
 }
@@ -269,10 +258,7 @@ select_strategy_version_interactive() {
         2)
             read -p "Введите хеш коммита или тег: " selected_strat_version
             if [[ -z "$selected_strat_version" ]]; then
-                echo -e "\nВерсия не может быть пустой!\n"
-                sleep 0.7
-                select_strategy_version_interactive
-                return 0
+                handle_error "Версия не может быть пустой!"
             fi
             ;;
             
@@ -282,10 +268,7 @@ select_strategy_version_interactive() {
             tags=$(get_git_tags "$REPO_URL")
 
             if [[ -z "$tags" ]]; then
-                echo -e "\nНе удалось получить теги\n"
-                sleep 0.7
-                select_strategy_version_interactive
-                return 0
+                handle_error "Теги не найдены в репозитории"
             fi
 
             # Преобразуем в массив
@@ -295,10 +278,7 @@ select_strategy_version_interactive() {
             done <<< "$tags"
 
             if [[ ${#tag_array[@]} -eq 0 ]]; then
-                echo -e "\nТеги не найдены\n"
-                sleep 0.7
-                select_strategy_version_interactive
-                return 0
+                handle_error "Теги не найдены в репозитории"
             fi
 
             echo ""
@@ -313,10 +293,7 @@ select_strategy_version_interactive() {
             done
             ;;
         *)
-            echo -e "\nТакого варианта нет\n"
-            sleep 0.7
-            select_strategy_version_interactive
-            return 0
+            handle_error "Такого варианта нет"
             ;;
     esac
 }
