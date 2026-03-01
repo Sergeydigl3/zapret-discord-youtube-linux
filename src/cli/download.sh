@@ -106,22 +106,31 @@ handle_download_deps_command() {
         # Выбор версии стратегий
         select_strategy_version_interactive
         strat_version="$selected_strat_version"
-    else
-        zapret_version="${zapret_version:-$ZAPRET_RECOMMENDED_VERSION}"
-        strat_version="${strat_version:-$MAIN_REPO_REV}"
     fi
 
-    echo ""
-    echo "Загрузка nfqws (version: $zapret_version)..."
-    download_nfqws "$zapret_version"
+    # Если выбрана версия nfqws
+    if [[ $zapret_version != "" ]]; then
+        echo ""
+        echo "Загрузка nfqws (version: $zapret_version)..."
+        download_nfqws "$zapret_version"
+    else
+        echo ""
+        echo "Пропуск загрузки nfqws"
+    fi
+    
+    # Если выбрана версия стратегий
+    if [[ $strat_version != "" ]]; then
+        echo ""
+        echo "Загрузка стратегий (version: $strat_version)..."
 
-    echo ""
-    echo "Загрузка стратегий (version: $strat_version)..."
+        # Устанавливаем глобальный флаг интерактивности для setup_repository
+        INTERACTIVE_MODE="$interactive"
+        setup_repository "$strat_version"
 
-    # Устанавливаем глобальный флаг интерактивности для setup_repository
-    INTERACTIVE_MODE="$interactive"
-    setup_repository "$strat_version"
-
-    echo ""
-    echo "Зависимости успешно загружены."
+        echo ""
+        echo "Зависимости успешно загружены."
+    else
+        echo ""
+        echo "Пропуск загрузки стратегий"
+    fi
 }

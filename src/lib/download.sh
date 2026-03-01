@@ -167,9 +167,10 @@ select_zapret_version_interactive() {
     echo "2) latest (Последняя доступная версия)"
     echo "3) Ввести версию вручную"
     echo "4) Выбрать из доступных версий"
+    echo "5) Пропустить"
     echo ""
 
-    read -p "Ваш выбор [1-4]: " choice
+    read -p "Ваш выбор [1-5]: " choice
 
     case $choice in
         1)
@@ -181,8 +182,10 @@ select_zapret_version_interactive() {
         3)
             read -p "Введите версию (тег): " selected_zapret_version
             if [[ -z "$selected_zapret_version" ]]; then
-                echo "Ошибка: версия не может быть пустой"
-                return 1
+                echo -e "\nВерсия не может быть пустой!\n"
+                sleep 0.7
+                select_zapret_version_interactive
+                return 0
             fi
             ;;
         4)
@@ -191,8 +194,9 @@ select_zapret_version_interactive() {
             tags=$(get_git_tags "https://github.com/${ZAPRET_REPO}")
 
             if [[ -z "$tags" ]]; then
-                echo "Не удалось получить список версий. Используем рекомендованную версию."
-                selected_zapret_version="$ZAPRET_RECOMMENDED_VERSION"
+                echo -e "\nНе удалось получить теги\n"
+                sleep 0.7
+                select_zapret_version_interactive
                 return 0
             fi
 
@@ -203,8 +207,9 @@ select_zapret_version_interactive() {
             done <<< "$tags"
 
             if [[ ${#tag_array[@]} -eq 0 ]]; then
-                echo "Версии не найдены. Используем рекомендованную версию."
-                selected_zapret_version="$ZAPRET_RECOMMENDED_VERSION"
+                echo -e "\nТеги не найдены\n"
+                sleep 0.7
+                select_zapret_version_interactive
                 return 0
             fi
 
@@ -233,9 +238,14 @@ select_zapret_version_interactive() {
                 echo "Неверный выбор. Попробуйте еще раз."
             done
             ;;
-        *)
-            echo "Неверный выбор. Используем рекомендованную версию."
-            selected_zapret_version="$ZAPRET_RECOMMENDED_VERSION"
+        5)
+            return 0
+            ;;
+        *)  
+            echo -e "\nТакого варианта нет\n"
+            sleep 0.7
+            select_zapret_version_interactive
+            return 0
             ;;
     esac
 }
@@ -259,18 +269,22 @@ select_strategy_version_interactive() {
         2)
             read -p "Введите хеш коммита или тег: " selected_strat_version
             if [[ -z "$selected_strat_version" ]]; then
-                echo "Ошибка: версия не может быть пустой"
-                return 1
+                echo -e "\nВерсия не может быть пустой!\n"
+                sleep 0.7
+                select_strategy_version_interactive
+                return 0
             fi
             ;;
+            
         3)
             echo "Загрузка списка тегов..."
             local tags
             tags=$(get_git_tags "$REPO_URL")
 
             if [[ -z "$tags" ]]; then
-                echo "Не удалось получить список тегов. Используем рекомендованную версию."
-                selected_strat_version="$MAIN_REPO_REV"
+                echo -e "\nНе удалось получить теги\n"
+                sleep 0.7
+                select_strategy_version_interactive
                 return 0
             fi
 
@@ -281,8 +295,9 @@ select_strategy_version_interactive() {
             done <<< "$tags"
 
             if [[ ${#tag_array[@]} -eq 0 ]]; then
-                echo "Теги не найдены. Используем рекомендованную версию."
-                selected_strat_version="$MAIN_REPO_REV"
+                echo -e "\nТеги не найдены\n"
+                sleep 0.7
+                select_strategy_version_interactive
                 return 0
             fi
 
@@ -298,8 +313,10 @@ select_strategy_version_interactive() {
             done
             ;;
         *)
-            echo "Неверный выбор. Используем рекомендованную версию."
-            selected_strat_version="$MAIN_REPO_REV"
+            echo -e "\nТакого варианта нет\n"
+            sleep 0.7
+            select_strategy_version_interactive
+            return 0
             ;;
     esac
 }
