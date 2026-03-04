@@ -109,6 +109,7 @@ stop_nfqws() {
 # Аргументы:
 #   $1 - версия (коммит/тег/ветка), по умолчанию MAIN_REPO_REV
 setup_repository() {
+    local user_lists_dir="$BASE_DIR/user-lists"
     local version="${1:-$MAIN_REPO_REV}"
 
     if [ -d "$REPO_DIR" ]; then
@@ -122,6 +123,11 @@ setup_repository() {
             fi
         fi
 
+        if [[ -d "$REPO_DIR/lists" && -d "$user_lists_dir" ]]; then
+            log "Копирование lists"
+            rm -f "$user_lists_dir"/*
+            cp "$REPO_DIR/lists"/* "$user_lists_dir/"  
+        fi
         log "Удаление существующего репозитория..."
         rm -rf "$REPO_DIR"
     fi
@@ -152,6 +158,8 @@ setup_repository() {
     if [[ -d "$REPO_DIR/lists" ]]; then
         local user_lists_dir="$BASE_DIR/user-lists"
         mkdir -p "$user_lists_dir"
+
+        # Создаем lists (touch не перезаписывает файлы если они существовали)
         touch "$user_lists_dir/ipset-exclude-user.txt"
         touch "$user_lists_dir/list-general-user.txt"
         touch "$user_lists_dir/list-exclude-user.txt"
@@ -162,9 +170,9 @@ setup_repository() {
         chmod 644 "$user_lists_dir/list-exclude-user.txt"
 
         # Создаём хардлинки (не симлинки!) чтобы обойти проблемы с доступом к /home/user
-        ln -f "$user_lists_dir/ipset-exclude-user.txt" "$REPO_DIR/lists/" 2>/dev/null || true
-        ln -f "$user_lists_dir/list-general-user.txt" "$REPO_DIR/lists/" 2>/dev/null || true
-        ln -f "$user_lists_dir/list-exclude-user.txt" "$REPO_DIR/lists/" 2>/dev/null || true
+        for file in "$user_lists_dir"/*; do
+            ln -f "$file" "$REPO_DIR/lists/" 2>/dev/null || true
+        done
     fi
 }
 
