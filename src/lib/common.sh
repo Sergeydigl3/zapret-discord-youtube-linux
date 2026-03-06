@@ -40,7 +40,7 @@ handle_error() {
 check_dependencies() {
     local deps=("git" "nft" "grep" "sed" "curl")
     for dep in "${deps[@]}"; do
-        if ! sudo which "$dep" >/dev/null 2>&1; then
+        if ! elevate which "$dep"; then
             handle_error "Не установлена утилита $dep"
         fi
     done
