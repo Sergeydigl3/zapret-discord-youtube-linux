@@ -82,6 +82,8 @@ download_zapret_release() {
     local archive="zapret-${tag}.tar.gz"
     local url="https://github.com/${ZAPRET_REPO}/releases/download/${tag}/${archive}"
     local tmp="/tmp/${archive}"
+    
+    elevate rm -rf "$tmp"
 
     log "Скачивание zapret: $url" >&2
     curl -fL "$url" -o "$tmp" || handle_error "Ошибка при скачивании zapret"
@@ -117,6 +119,7 @@ extract_nfqws_binary() {
 download_nfqws() {
     local version="${1:-latest}"
     local out_dir="${BASE_DIR:-$(dirname "$NFQWS_PATH")}"
+    
 
     log "Скачивание nfqws (версия: $version)..." >&2
 
