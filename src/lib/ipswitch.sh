@@ -27,7 +27,7 @@ change_mode_ipset(){
             echo "Выбранный режим - $(get_mode_ipset)"
             return 0
         fi
-        handle_error "Не найден бекап, переустановите zapret стратегии"
+        handle_error "Не найден бекап, переустановите zapret стратегии."
     else
         if [ -f "$bipset" ]; then
             rm -rf "$bipset"
