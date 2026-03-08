@@ -7,7 +7,7 @@ assignees: []
 body:
   - type: markdown
     attributes:
-      content: |
+      value: |
         Этот issue предназначен для запросов на интеграцию новых стратегий из upstream Flowseal.
 
   - type: checkboxes
@@ -16,11 +16,10 @@ body:
       label: "Проверено перед созданием запроса"
       options:
         - label: "Я не прошу исправить баги в текущем скрипте этим issue"
-          required: true
 
   - type: textarea
     id: reason
     attributes:
       label: "Комментарий"
-      placeholder: "Например, нужна для обхода новых ограничений на YouTube"
+      placeholder: "Например, нужна для обхода новых ограничений на YouTube. Я проверил, на новой версии все работает"
       required: false

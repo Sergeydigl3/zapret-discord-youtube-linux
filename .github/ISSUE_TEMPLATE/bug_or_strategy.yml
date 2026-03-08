@@ -1,4 +1,4 @@
-name: 🐛 Проблема со скриптом или стратегией
+name: 🐛 Скрипт или стратегии выдают явные ошибки, или не работают как ожидается
 description: "Перед созданием issue убедитесь, что вы выполнили все шаги проверки."
 title: "[ISSUE] "
 labels: ["bug", "strategy"]
@@ -7,56 +7,83 @@ assignees: []
 body:
   - type: markdown
     attributes:
-      content: |
-        Спасибо за использование **zapret-discord-youtube-linux**!  
+      value: |
+        Спасибо за использование **zapret-discord-youtube-linux**!
         Перед созданием issue, пожалуйста, выполните все шаги ниже и заполните информацию.
+
+        > ⚠️ Это адаптер, а не источник стратегий. Если у вас не работает YouTube или другой сайт — сначала проверьте [раздел "Поддержка и помощь" в README](https://github.com/Sergeydigl3/zapret-discord-youtube-linux#поддержка-и-помощь), а также [Issues](https://github.com/Flowseal/zapret-discord-youtube/issues) и [Discussions](https://github.com/Flowseal/zapret-discord-youtube/discussions) в репозитории Flowseal.
 
   - type: checkboxes
     id: checklist
     attributes:
       label: "Проверено перед созданием issue"
       options:
-        - label: "Я прочитал README и документацию полностью"
-          required: true
-        - label: "Я проверил существующие issues и не нашёл ответа на свой вопрос"
-          required: true
-        - label: "Я проверил, что проблема воспроизводится на всех скриптах/стратегиях"
-          required: true
-        - label: "Я использую x86_64 или пробовал заменить бинарный файл `nfqws` от bol-van для моей архитектуры"
-          required: true
-        - label: "Я сделал `sudo bash main_script.sh -debug` и собрал логи"
-          required: true
-        - label: "Я полностью удалял директорию и устанавливал заново, строго следуя инструкциям из README"
-          required: true
+        - label: "Я прочитал README полностью"
+        - label: "Я проверил существующие issues и discussions и не нашёл ответа"
+        - label: "Я попробовал ВСЕ другие стратегии (а не 2,3) и использовал `./auto_tune_youtube.sh` для автоподбора"
+        - label: "Я проверил Issues и Discussions в репозитории Flowseal/zapret-discord-youtube"
+        - label: "Я полностью удалял директорию и устанавливал заново строго по инструкции"
         - label: "Я пытался решить проблему самостоятельно через Google или ChatGPT, безрезультатно"
-          required: true
+    validations:
+      required: true
 
   - type: input
     id: os_version
     attributes:
-      label: "ОС и версия (например, Ubuntu 24.04 или Arch Linux)"
-      placeholder: "Ubuntu 24.04"
+      label: "ОС и версия"
+      placeholder: "Ubuntu 24.04 / Debian 12 / Arch Linux / Gentoo Linux"
     validations:
       required: true
+
+  - type: dropdown
+    id: init_system
+    attributes:
+      label: "Система инициализации"
+      options:
+        - systemd
+        - OpenRC
+        - runit
+        - s6
+        - dinit
+        - Другая / не знаю
+    validations:
+      required: true
+
+  - type: input
+    id: arch
+    attributes:
+      label: "Архитектура"
+      placeholder: "x86_64 / ARM / MIPS / другая"
+    validations:
+      required: true
+
+  - type: input
+    id: zapret_version
+    attributes:
+      label: "Версия nfqws и коммит стратегий"
+      description: "Смотрите в `src/lib/constants.sh` (ZAPRET_RECOMMENDED_VERSION и MAIN_REPO_REV) или после выполнения `./service.sh download-deps`"
+      placeholder: "nfqws v72.9, стратегии main / cb9aed09..."
+    validations:
+      required: false
 
   - type: textarea
     id: description
     attributes:
       label: "Описание проблемы"
-      description: "Опишите подробно, что именно не работает (скрипт падает, стратегия не применяет правила и т.д.)"
-      placeholder: "Например, скрипт не создаёт правила nftables или стратегия general_alt5.bat не работает"
+      description: "Опишите подробно, что именно не работает (скрипт падает, сервис не запускается, стратегия не применяет правила и т.д.)"
+      placeholder: "Например: ./service.sh run не создаёт правила nftables, или сервис падает сразу после старта"
     validations:
       required: true
 
   - type: textarea
     id: logs
     attributes:
-      label: "Логи / вывод команды `-debug` и сервисные логи (если применимо)"
+      label: "Логи"
       description: |
-        Вставьте сюда:
-        - вывод `sudo bash main_script.sh -debug`  
-        - если проблема возникает при автозапуске через сервис: `journalctl -u zapret_discord_youtube.service`
-      placeholder: "Paste debug logs and service logs here"
+        Вставьте сюда вывод команды и/или сервисные логи:
+        - Вывод `./service.sh run -s general.bat -i <интерфейс>`
+        - Если проблема с сервисом: `journalctl -u zapret_discord_youtube.service` (для systemd) или аналог для вашей init-системы
+      placeholder: "Paste logs here"
     validations:
       required: true
 
@@ -64,8 +91,11 @@ body:
     id: reproduce_steps
     attributes:
       label: "Шаги воспроизведения"
-      description: |
-        Вставьте сюда подряд команды, которые выполняли, начиная с git clone:
-      placeholder: "Paste your shell steps here"
+      description: "Вставьте подряд команды, которые выполняли, начиная с git clone"
+      placeholder: |
+        git clone https://github.com/Sergeydigl3/zapret-discord-youtube-linux.git
+        cd zapret-discord-youtube-linux
+        ./service.sh download-deps --default
+        ./service.sh run
     validations:
       required: true
