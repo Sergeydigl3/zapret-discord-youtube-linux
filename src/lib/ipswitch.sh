@@ -1,13 +1,20 @@
 #!/usr/bin/env bash
 
 change_mode_ipset(){
-    local ipset="$REPO_DIR/lists/ipset-all.txt"
-    local bipset="$REPO_DIR/lists/ipset-all.txt.backup"
     if [[ $# != 1 ]]; then
         handle_error "Не приложен mode или приложено более двух аргументов"
     fi
 
     mode="$1"
+
+    if [[ "$mode" == "Текущая версия конфигураций не поддерживается" ]]; then
+        handle_error "Текущая версия конфигураций не поддерживается. Для смены ipset режима вам следует поменять версию на более новую."
+        return 0
+    fi
+
+    local ipset="$REPO_DIR/lists/ipset-all.txt"
+    local bipset="$REPO_DIR/lists/ipset-all.txt.backup"
+
 
     if [[ "$mode" == "None (Только Lists)" ]]; then
         rm -rf "$ipset"
@@ -34,6 +41,15 @@ change_mode_ipset(){
 
 get_mode_ipset(){
     local ipset="$REPO_DIR/lists/ipset-all.txt"
+
+    if ! [ -d "$REPO_DIR/lists" ]; then
+        echo "Текущая версия конфигураций не поддерживается"
+        return 0
+    fi
+
+    if ! [ -f "$ipset" ]; then
+        touch "$ipset"
+    fi
 
     if grep -q "203.0.113.113" "$ipset"; then
         echo "None (Только Lists)"
