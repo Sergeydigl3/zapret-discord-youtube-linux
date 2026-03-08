@@ -51,7 +51,7 @@ show_menu() {
     4) show_dependencies_menu ;;
     5) show_desktop_menu ;;
     6) setup_permissions ;;
-    7) rename_ipset "$(get_mode_ipset)" ;;
+    7) change_mode_ipset "$(get_mode_ipset)" ;;
     0) exit 0 ;;
     *)
         echo "Неверный выбор."

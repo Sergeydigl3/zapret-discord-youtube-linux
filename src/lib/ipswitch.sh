@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-rename_ipset(){
+change_mode_ipset(){
     local ipset="$REPO_DIR/lists/ipset-all.txt"
     local bipset="$REPO_DIR/lists/ipset-all.txt.backup"
     if [[ $# != 1 ]]; then
