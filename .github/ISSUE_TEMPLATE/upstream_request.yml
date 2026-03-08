@@ -22,4 +22,3 @@ body:
     attributes:
       label: "Комментарий"
       placeholder: "Например, нужна для обхода новых ограничений на YouTube. Я проверил, на новой версии все работает"
-      required: false
