@@ -35,7 +35,7 @@ change_mode_ipset(){
 get_mode_ipset(){
     local ipset="$REPO_DIR/lists/ipset-all.txt"
 
-    if [[ $(wc -l < "$ipset") == 1 ]] && [[ $(cat "$ipset") == "203.0.113.113/32" ]]; then
+    if grep -q "203.0.113.113" "$ipset"; then
         echo "None (Только Lists)"
     elif [[ $(wc -l < "$ipset") == 0 ]]; then
         echo "Any (Весь траффик)"
