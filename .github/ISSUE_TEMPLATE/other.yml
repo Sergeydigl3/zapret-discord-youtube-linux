@@ -1,0 +1,21 @@
+name: 💬 Другое
+description: "Что-то не вписывается в другие шаблоны? Опишите здесь."
+title: "[OTHER] "
+labels: ["question"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Используйте этот шаблон, если ваш вопрос или проблема не подходят под другие категории.
+
+        > 💡 Для обсуждения стратегий и поиска рабочих конфигураций лучше использовать [Discussions](https://github.com/Sergeydigl3/zapret-discord-youtube-linux/discussions).
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Описание"
+      placeholder: "Опишите ваш вопрос или проблему"
+    validations:
+      required: true
