@@ -12,12 +12,12 @@ rename_ipset(){
     if [[ "$mode" == "None (Только Lists)" ]]; then
         rm -rf "$ipset"
         touch "$ipset"
-        echo "Выбранный режим - $(mode_ipset)"
+        echo "Выбранный режим - $(get_mode_ipset)"
     elif [[ "$mode" == "Any (Весь траффик)" ]]; then
         if [ -f "$bipset" ]; then
             rm -rf "$ipset"
             cp "$bipset" "$ipset"
-            echo "Выбранный режим - $(mode_ipset)"
+            echo "Выбранный режим - $(get_mode_ipset)"
             return 0
         fi
         handle_error "Не найден бекап, переустановите zapret стратегии"
@@ -27,12 +27,12 @@ rename_ipset(){
         fi
         cp "$ipset" "$bipset"
         echo "203.0.113.113/32" > "$ipset"
-        echo "Выбранный режим - $(mode_ipset)"
+        echo "Выбранный режим - $(get_mode_ipset)"
         return 0
     fi
 }
 
-mode_ipset(){
+get_mode_ipset(){
     local ipset="$REPO_DIR/lists/ipset-all.txt"
 
     if [[ $(wc -l < "$ipset") == 1 ]] && [[ $(cat "$ipset") == "203.0.113.113/32" ]]; then
