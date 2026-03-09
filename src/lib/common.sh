@@ -301,9 +301,17 @@ parse_bat_file() {
     # Обрабатываем GameFilter
     if [ "$USE_GAME_FILTER" = true ]; then
         content="${content//%GameFilter%/$GAME_FILTER_PORTS}"
+        #TCP and UDP
+        content="${content//%GameFilterTCP%/$GAME_FILTER_PORTS}"
+        content="${content//%GameFilterUDP%/$GAME_FILTER_PORTS}"
     else
         content="${content//,%GameFilter%/}"
         content="${content//%GameFilter%,/}"
+        #TCP and UDP
+        content="${content//,%GameFilterTCP%/}"
+        content="${content//%GameFilterTCP%,/}"
+        content="${content//,%GameFilterUDP%/}"
+        content="${content//%GameFilterUDP%,/}"
     fi
 
     # Ищем --wf-tcp и --wf-udp
