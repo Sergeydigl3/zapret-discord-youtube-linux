@@ -20,6 +20,8 @@ NFT_RULE_COMMENT="Added by zapret script"
 
 # GameFilter
 GAME_FILTER_PORTS="1024-65535"
+GAME_FILTER_TCP_PORTS="12"
+GAME_FILTER_UDP_PORTS="1024-65535"
 
 # Репозиторий со стратегиями
 REPO_URL="https://github.com/Flowseal/zapret-discord-youtube"

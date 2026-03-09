@@ -302,8 +302,8 @@ parse_bat_file() {
     if [ "$USE_GAME_FILTER" = true ]; then
         content="${content//%GameFilter%/$GAME_FILTER_PORTS}"
         #TCP and UDP
-        content="${content//%GameFilterTCP%/$GAME_FILTER_PORTS}"
-        content="${content//%GameFilterUDP%/$GAME_FILTER_PORTS}"
+        content="${content//%GameFilterTCP%/$GAME_FILTER_TCP_PORTS}"
+        content="${content//%GameFilterUDP%/$GAME_FILTER_UDP_PORTS}"
     else
         content="${content//,%GameFilter%/}"
         content="${content//%GameFilter%,/}"
