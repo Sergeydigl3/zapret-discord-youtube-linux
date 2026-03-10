@@ -59,7 +59,7 @@ check_conf_file() {
         return 1
     fi
 
-    local required_fields=("interface" "gamefilter" "strategy")
+    local required_fields=("interface" "gamefilter" "router_mode" "strategy")
     for field in "${required_fields[@]}"; do
         if ! grep -q "^${field}=[^[:space:]]" "$conf_file"; then
             return 1
@@ -78,7 +78,7 @@ load_config() {
 
     source "$conf_file"
 
-    if [[ -z "$interface" ]] || [[ -z "$gamefilter" ]] || [[ -z "$strategy" ]]; then
+    if [[ -z "$interface" ]] || [[ -z "$gamefilter" ]] || [[ -z "$router_mode" ]] || [[ -z "$strategy" ]]; then
         handle_error "Отсутствуют обязательные параметры в конфигурационном файле"
     fi
 }
@@ -376,8 +376,8 @@ start_nfqws() {
         full_params="$full_params $params"
     done
 
-    debug_log "Запуск nfqws с параметрами: $NFQWS_PATH --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params"
-    eval "elevate $NFQWS_PATH --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params" ||
+    debug_log "Запуск nfqws с параметрами: $NFQWS_PATH --user=root --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params"
+    eval "elevate $NFQWS_PATH --user=root --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params" ||
         handle_error "Ошибка при запуске nfqws"
 }
 
@@ -402,6 +402,15 @@ run_zapret() {
     else
         USE_GAME_FILTER=false
         log "GameFilter выключен"
+    fi
+
+    # Установка ROUTER_MODE
+    if [ "$router_mode" == "true" ]; then
+        ROUTER_MODE=1
+        log "Router mode включен"
+    else
+        ROUTER_MODE=0
+        log "Router mode выключен"
     fi
 
     # Получаем путь к стратегии

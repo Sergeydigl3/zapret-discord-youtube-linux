@@ -15,6 +15,7 @@ show_run_usage() {
     echo "    -s, --strategy NAME     Use specific strategy"
     echo "    -i, --interface NAME    Network interface (default: any)"
     echo "    -g, --gamefilter        Enable gamefilter"
+    echo "    -r, --router-mode       Enable router mode"
     echo "    -h, --help              Show this help"
     echo
     echo "Modes:"
@@ -41,6 +42,7 @@ run_zapret_command() {
     local use_strategy=""
     local use_interface="any"
     local use_gamefilter="false"
+    local use_router_mode="false"
     local interactive=true
 
     # Парсинг аргументов
@@ -62,6 +64,10 @@ run_zapret_command() {
                 ;;
             -g|--gamefilter)
                 use_gamefilter="true"
+                shift
+                ;;
+            -r|--router-mode)
+                use_router_mode="true"
                 shift
                 ;;
             -h|--help)
@@ -94,10 +100,11 @@ run_zapret_command() {
 
     # Режим 2: Прямые параметры
     elif [[ -n "$use_strategy" ]]; then
-        echo "Запуск с параметрами: strategy=$use_strategy, interface=$use_interface, gamefilter=$use_gamefilter"
+        echo "Запуск с параметрами: strategy=$use_strategy, interface=$use_interface, gamefilter=$use_gamefilter, router_mode=$use_router_mode"
         strategy="$use_strategy"
         interface="$use_interface"
         gamefilter="$use_gamefilter"
+        router_mode="$use_router_mode"
 
     # Режим 3: Интерактивный выбор
     elif [[ "$interactive" == true ]]; then
@@ -121,6 +128,14 @@ run_zapret_command() {
             gamefilter="true"
         else
             gamefilter="false"
+        fi
+
+        # Router mode
+        read -p "Включить Router mode? (обход замедления для устройств в локальной сети, подробнее в README) [y/N]: " enable_rm
+        if [[ "$enable_rm" =~ ^[Yy1] ]]; then
+            router_mode="true"
+        else
+            router_mode="false"
         fi
 
         # Выбор стратегии

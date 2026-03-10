@@ -91,7 +91,22 @@ cd zapret-discord-youtube-linux
 strategy=general.bat
 interface=enp0s3
 gamefilter=true
+router_mode=false
 ```
+
+## Router mode
+
+Router mode позволяет использовать zapret **на всех устройствах в вашей локальной сети** — телефонах, планшетах, Smart TV и др. — без установки чего-либо на эти устройства. Достаточно настроить шлюз по умолчанию на них (или в DHCP на роутере) на адрес Linux-машины с запущенным zapret.
+
+Пример: 
+1. На телефоне смотрим текущие настройки. IP, Маска, Шлюз (Gateway) (адрес вашего роутера), dns server.
+2. Переключаем с DHCP, на статический адрес - И выставляем IP который и был, маска такая же. Вместо шлюза указываем локальный ip адрес компьютера/сервера где запущен запрет. В качестве dns сервера указываем адрес роутера.
+
+Идеально для установки на одноплатный компьютер, старый ноутбук, lxc контейнер в proxmox и тд...
+
+> **Примечание:** При включении router mode автоматически активируется `net.ipv4.ip_forward` и создаётся NAT (masquerade). Настройка сохраняется в `/etc/sysctl.d/99-zapret_discord_youtube.conf` и применяется при каждом старте. При остановке — автоматически убирается.
+
+---
 
 ## Управление через CLI
 
@@ -129,6 +144,7 @@ gamefilter=true
 # Прямые параметры
 ./service.sh run -s general.bat -i enp0s3
 ./service.sh run -s general.bat -i enp0s3 -g  # с gamefilter
+./service.sh run -s general.bat -i enp0s3 -r  # в режиме роутера
 ```
 
 ### Управление системным сервисом
@@ -164,6 +180,7 @@ gamefilter=true
 # Установить конфигурацию напрямую
 ./service.sh config set general.bat
 ./service.sh config set general.bat enp0s3 -g  # с gamefilter
+./service.sh config set general.bat enp0s3 -r  # в режиме роутера
 ./service.sh config set discord -n             # без перезапуска сервиса
 ```
 

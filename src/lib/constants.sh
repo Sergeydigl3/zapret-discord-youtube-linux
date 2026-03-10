@@ -13,10 +13,15 @@ SERVICE_NAME="zapret_discord_youtube"
 
 # nftables настройки
 NFT_TABLE="inet zapretunix"
+NFT_TABLE_IP="ip zapretunix"
 NFT_CHAIN="output"
+NFT_COMMON_CHAIN="zapret_common"
 NFT_QUEUE_NUM=220
 NFT_MARK="0x40000000"
 NFT_RULE_COMMENT="Added by zapret script"
+
+# Роутерный режим (по умолчанию выключен)
+ROUTER_MODE="${ROUTER_MODE:-0}"
 
 # GameFilter
 GAME_FILTER_PORTS="1024-65535"
