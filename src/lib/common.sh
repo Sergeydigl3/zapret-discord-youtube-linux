@@ -38,11 +38,13 @@ handle_error() {
 # -----------------------------------------------------------------------------
 
 check_dependencies() {
+    export PATH="$PATH:/usr/local/sbin:/usr/sbin:/sbin"
     local deps=("git" "nft" "grep" "sed" "curl")
+
     for dep in "${deps[@]}"; do
-        if ! elevate sh -c command -v "$dep" >/dev/null 2>&1; then
+        if ! command -v "$dep" >/dev/null 2>&1; then
             handle_error "Не установлена утилита $dep"
-        fi
+        fi   
     done
 }
 
