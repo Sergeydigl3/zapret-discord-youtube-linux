@@ -65,6 +65,7 @@ directory="\$HOMEDIR"
 kill_mode="mixed"
 extra_commands="logs"
 
+LOG_FILE="$LOG_FILE"
 output_log="$LOG_FILE"
 error_log="$LOG_FILE"
 
