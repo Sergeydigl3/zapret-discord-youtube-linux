@@ -40,7 +40,15 @@ create_conf_file() {
         gamefilter_choice="false"
     fi
 
-    # 3. Выбор стратегии
+    # 3. Router mode
+    read -p "Включить Router mode? (обход замедления для устройств в локальной сети, подробнее в README) [y/N]: " enable_router_mode
+    if [[ "$enable_router_mode" =~ ^[Yy1] ]]; then
+        router_mode_choice="true"
+    else
+        router_mode_choice="false"
+    fi
+
+    # 4. Выбор стратегии
     select_strategy_interactive
     local strategy_choice="$selected_strategy"
 
@@ -48,6 +56,7 @@ create_conf_file() {
     cat <<EOF >"$CONF_FILE"
 interface=$chosen_interface
 gamefilter=$gamefilter_choice
+router_mode=$router_mode_choice
 strategy=$strategy_choice
 EOF
 
@@ -85,6 +94,7 @@ update_config() {
     local strategy="$1"
     local interface="${2:-any}"
     local gamefilter="$3"
+    local router_mode="${4:-false}"
 
     # Валидация и нормализация названия стратегии
     local normalized_strategy
@@ -107,6 +117,7 @@ update_config() {
     cat > "$CONF_FILE" << ENV
 interface=${interface}
 gamefilter=${gamefilter}
+router_mode=${router_mode}
 strategy=${normalized_strategy}
 ENV
 
@@ -129,12 +140,14 @@ show_config_usage() {
     echo
     echo "Options for 'set':"
     echo "    -g, --gamefilter    Enable gamefilter"
+    echo "    -r, --router-mode   Enable router mode"
     echo "    -n, --norestart     Do not restart the service"
     echo
     echo "Examples:"
     echo "    $(basename "$0") config show"
     echo "    $(basename "$0") config set discord"
     echo "    $(basename "$0") config set discord eth0 -g"
+    echo "    $(basename "$0") config set discord eth0 -r"
 }
 
 # Обработчик команды config
@@ -150,6 +163,7 @@ handle_config_command() {
             shift
             # Парсинг флагов для set
             local gamefilter=false
+            local router_mode=false
             local restart_svc=true
             local strategy=""
             local iface="any"
@@ -158,6 +172,10 @@ handle_config_command() {
                 case $1 in
                     -g|--gamefilter)
                         gamefilter=true
+                        shift
+                        ;;
+                    -r|--router-mode)
+                        router_mode=true
                         shift
                         ;;
                     -n|--norestart)
@@ -191,7 +209,7 @@ handle_config_command() {
             fi
 
             RESTART_SERVICE=$restart_svc
-            update_config "$strategy" "$iface" "$gamefilter"
+            update_config "$strategy" "$iface" "$gamefilter" "$router_mode"
             ;;
         -h|--help|"")
             show_config_usage
