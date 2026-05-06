@@ -373,13 +373,19 @@ start_nfqws() {
     stop_nfqws
     cd "$REPO_DIR" || handle_error "Не удалось перейти в директорию $REPO_DIR"
 
-    local full_params=""
+    local full_params=(
+        "$NFQWS_PATH"
+        --daemon
+        --dpi-desync-fwmark="$NFT_MARK"
+        --qnum="$NFT_QUEUE_NUM"
+    )
+
     for params in "${nfqws_params[@]}"; do
-        full_params="$full_params $params"
+        full_params+=($params)
     done
 
-    debug_log "Запуск nfqws с параметрами: $NFQWS_PATH --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params"
-    eval "elevate $NFQWS_PATH --daemon --dpi-desync-fwmark=$NFT_MARK --qnum=$NFT_QUEUE_NUM $full_params" ||
+    debug_log "Запуск NFQWS с параметрами: ${full_params[@]}"
+    elevate "${full_params[@]}" ||
         handle_error "Ошибка при запуске nfqws"
 }
 
