@@ -63,11 +63,24 @@ check_conf_file() {
 
     local required_fields=("interface" "gamefilter" "strategy")
     for field in "${required_fields[@]}"; do
-        if ! grep -q "^${field}=[^[:space:]]" "$conf_file"; then
+        if ! grep -qE "^${field}=.+" "$conf_file"; then
             return 1
         fi
     done
     return 0
+}
+
+# Безопасное чтение одного значения из conf.env
+# Использование: _read_conf_value "ключ" "/path/to/conf.env"
+_read_conf_value() {
+    local key="$1"
+    local conf_file="$2"
+
+    # Ищем строки вида key=value, игнорируем комментарии и пустые строки
+    # Значение может содержать пробелы, но не переводы строк
+    grep -E "^${key}=[^\n]*" "$conf_file" \
+        | head -n1 \
+        | cut -d= -f2-
 }
 
 # Загрузка конфигурации из файла
@@ -78,10 +91,35 @@ load_config() {
         handle_error "Файл конфигурации $conf_file не найден"
     fi
 
-    source "$conf_file"
+    # Читаем каждое поле явно - без выполнения файла
+    interface=$(_read_conf_value "interface" "$conf_file")
+    gamefilter=$(_read_conf_value "gamefilter" "$conf_file")
+    strategy=$(_read_conf_value "strategy" "$conf_file")
 
     if [[ -z "$interface" ]] || [[ -z "$gamefilter" ]] || [[ -z "$strategy" ]]; then
         handle_error "Отсутствуют обязательные параметры в конфигурационном файле"
+    fi
+
+    # Дополнительная валидация значений
+    _validate_config
+}
+
+_validate_config() {
+    # gamefilter должен быть строго true или false
+    if [[ "$gamefilter" != "true" && "$gamefilter" != "false" ]]; then
+        handle_error "Недопустимое значение gamefilter='$gamefilter'. Допустимо: true, false"
+    fi
+
+    # interface не должен содержать спецсимволов (защита от инъекций в nft-команды)
+    if [[ -n "$interface" && "$interface" != "any" ]]; then
+        if [[ ! "$interface" =~ ^[a-zA-Z0-9_@.-]+$ ]]; then
+            handle_error "Недопустимое имя интерфейса: '$interface'"
+        fi
+    fi
+
+    # strategy - только имя файла, без путей и спецсимволов
+    if [[ "$strategy" =~ [/\\] ]] || [[ "$strategy" =~ \.\. ]]; then
+        handle_error "Недопустимое имя стратегии: '$strategy'. Не должно содержать пути"
     fi
 }
 
