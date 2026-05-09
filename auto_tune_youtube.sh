@@ -72,14 +72,48 @@ get_name_from_entry() {
 
 stop_zapret() {
     "$SERVICE_SCRIPT" kill 2>/dev/null
-    sleep 1
+
+    local elapsed=0
+    while [[ $elapsed -lt 5 ]]; do
+        if ! nft list tables 2>/dev/null | grep -q "zapretunix"; then
+            return 0
+        fi
+        sleep 1
+        (( elapsed++ ))
+    done
+    # Не страшно если не дождались - следующий запуск всё равно очищает таблицу
+    return 0
 }
+
+READY_TIMEOUT=10  # максимум секунд ожидания готовности
 
 run_strategy() {
     local strategy_name="$1"
-    # Запускаем через service.sh run с параметрами
+
     "$SERVICE_SCRIPT" run -s "$strategy_name" -i any >/dev/null 2>&1 &
-    sleep "$WAIT_TIME"
+    local bg_pid=$!
+
+    # Ждём либо пока nftables применится, либо пока процесс не упадёт
+    local elapsed=0
+    while [[ $elapsed -lt $READY_TIMEOUT ]]; do
+        # Процесс уже упал - стратегия не запустилась
+        if ! kill -0 "$bg_pid" 2>/dev/null; then
+            return 1
+        fi
+
+        # nftables-таблица появилась - правила применены
+        if nft list tables 2>/dev/null | grep -q "zapretunix"; then
+            # Ещё секунда чтобы nfqws успел подняться после nft
+            sleep 1
+            return 0
+        fi
+
+        sleep 1
+        (( elapsed++ ))
+    done
+
+    # Таймаут - что-то пошло не так
+    return 1
 }
 
 # Запустить service.sh run с стратегией (не в фоне, для постоянного использования)
@@ -269,7 +303,11 @@ for ((i=1; i<=MAX_STRATEGY; i++)); do
     name=$(get_strategy_name $i)
     printf "  ${BOLD}[%2d/%d]${NC} %-40s " "$i" "$MAX_STRATEGY" "$name"
 
-    run_strategy "$name" >/dev/null 2>&1
+    if ! run_strategy "$name" >/dev/null 2>&1; then
+        echo -e "${RED}[!] Стратегия не запустилась, пропускаем${NC}"
+        ((FAILED_COUNT++))
+        continue
+    fi
     ((TESTED_COUNT++))
     
     result=$(test_strategy)
