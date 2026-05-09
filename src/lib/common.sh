@@ -46,6 +46,13 @@ check_dependencies() {
             handle_error "Не установлена утилита $dep"
         fi   
     done
+
+    # Проверка модуля ядра nfnetlink_queue (необходим для nfqws)
+    if command -v lsmod >/dev/null 2>&1; then
+        if ! lsmod | grep -q nfnetlink_queue; then
+            log "Предупреждение: модуль ядра nfnetlink_queue не загружен. nfqws может не работать."
+        fi
+    fi
 }
 
 # -----------------------------------------------------------------------------
