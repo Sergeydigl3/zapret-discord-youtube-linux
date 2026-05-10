@@ -3,3 +3,5 @@ user-lists
 conf.env
 nfqws
 auto_tune_youtube_results.txt
+conf.env.backup
+auto_tune_results.txt
