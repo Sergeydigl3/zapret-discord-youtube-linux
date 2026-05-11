@@ -28,6 +28,7 @@ source "$HOME_DIR_PATH/src/cli/download.sh"
 source "$HOME_DIR_PATH/src/cli/desktop.sh"
 source "$HOME_DIR_PATH/src/cli/run.sh"
 source "$HOME_DIR_PATH/src/cli/permissions.sh"
+source "$HOME_DIR_PATH/src/cli/gamefilter.sh"
 
 check_dependencies
 
