@@ -35,17 +35,17 @@ create_conf_file() {
     # 2. GamefilterTCP
     read -p "Включить GamefilterTCP? [y/N] [n]: " enable_gamefilter
     if [[ "$enable_gamefilter" =~ ^[Yy1] ]]; then
-        gamefilter_choice_tcp="true"
+        local gamefilter_choice_tcp="true"
     else
-        gamefilter_choice_tcp="false"
+        local gamefilter_choice_tcp="false"
     fi
 
     # 3. GamefilterUDP
     read -p "Включить GamefilterUDP? [y/N] [n]: " enable_gamefilter
     if [[ "$enable_gamefilter" =~ ^[Yy1] ]]; then
-        gamefilter_choice_udp="true"
+        local gamefilter_choice_udp="true"
     else
-        gamefilter_choice_udp="false"
+        local gamefilter_choice_udp="false"
     fi
 
     # 4. Выбор стратегии

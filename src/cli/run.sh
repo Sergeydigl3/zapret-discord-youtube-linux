@@ -122,16 +122,15 @@ run_zapret_command() {
             echo "Неверный выбор. Попробуйте еще раз."
         done
 
-        if [[ "$(get_gamefilter_status)" == "TCP" ]]; then
+        #Gamefilter
+        gamefilter_status=$(get_gamefilter_status)
+        if [[ "$gamefilter_status" == "TCP" ]]; then
             gamefiltertcp="true"
-        elif [[ "$(get_gamefilter_status)" == "UDP" ]]; then
+        elif [[ "$gamefilter_status" == "UDP" ]]; then
             gamefilterudp="true"
-        elif [[ "$(get_gamefilter_status)" == "TCP + UDP" ]]; then
+        elif [[ "$gamefilter_status" == "TCP + UDP" ]]; then
             gamefiltertcp="true"
             gamefilterudp="true"
-        else
-            gamefiltertcp="false"
-            gamefilterudp="false"
         fi
 
         # Выбор стратегии

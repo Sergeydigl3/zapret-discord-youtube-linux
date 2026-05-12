@@ -1,40 +1,33 @@
-#!/bin/sh
+#!/usr/bin/env bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONSTANTS_FILE="$SCRIPT_DIR/../lib/constants.sh"
+    
+if [ ! -f "$CONSTANTS_FILE" ]; then
+        echo "Файл constants.sh не найден!"
+        exit 1
+fi
+
+. "$CONSTANTS_FILE"
+
+GAMEFILTER_ON="1024-65535"
+GAMEFILTER_OFF="12"
 
 gamefilter_menu() {
 
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    CONSTANTS_FILE="$SCRIPT_DIR/../lib/constants.sh"
-    
-    . "$CONSTANTS_FILE"
-
-    TCP_ON="1024-65535"
-    UDP_ON="1024-65535"
-
-    TCP_OFF="12"
-    UDP_OFF="12"
-
     # Очистка экрана
     clear
-
-    # Проверяем наличие файла
-    if [ ! -f "$CONSTANTS_FILE" ]; then
-        echo "Файл constants.sh не найден!"
-        exit 1
-    fi
-
-    # Подключаем переменные
-    . "$CONSTANTS_FILE"
 
     echo "========== Текущий статус GameFilter =========="
 
     TCP_STATUS="ВЫКЛЮЧЕН"
     UDP_STATUS="ВЫКЛЮЧЕН"
 
-    if [ "$GAME_FILTER_TCP_PORTS" = "$TCP_ON" ]; then
+    if [ "$GAME_FILTER_TCP_PORTS" = "$GAMEFILTER_ON" ]; then
         TCP_STATUS="ВКЛЮЧЕН"
     fi
 
-    if [ "$GAME_FILTER_UDP_PORTS" = "$UDP_ON" ]; then
+    if [ "$GAME_FILTER_UDP_PORTS" = "$GAMEFILTER_ON" ]; then
         UDP_STATUS="ВКЛЮЧЕН"
     fi
 
@@ -63,34 +56,33 @@ gamefilter_menu() {
     echo "4) Выключить всё"
     echo "0) Отмена"
 
-    printf "Введите номер: "
-    read choice
+    read -p "Введите номер: " choice
 
     case "$choice" in
         1)
-            sed -i "s/^GAME_FILTER_TCP_PORTS=.*/GAME_FILTER_TCP_PORTS=\"$TCP_ON\"/" "$CONSTANTS_FILE"
-            sed -i "s/^GAME_FILTER_UDP_PORTS=.*/GAME_FILTER_UDP_PORTS=\"$UDP_OFF\"/" "$CONSTANTS_FILE"
+            sed -i "s/^GAME_FILTER_TCP_PORTS=.*/GAME_FILTER_TCP_PORTS=\"$GAMEFILTER_ON\"/" "$CONSTANTS_FILE"
+            sed -i "s/^GAME_FILTER_UDP_PORTS=.*/GAME_FILTER_UDP_PORTS=\"$GAMEFILTER_OFF\"/" "$CONSTANTS_FILE"
 
             echo "GameFilter: TCP включен, UDP выключен"
             ;;
 
         2)
-            sed -i "s/^GAME_FILTER_TCP_PORTS=.*/GAME_FILTER_TCP_PORTS=\"$TCP_OFF\"/" "$CONSTANTS_FILE"
-            sed -i "s/^GAME_FILTER_UDP_PORTS=.*/GAME_FILTER_UDP_PORTS=\"$UDP_ON\"/" "$CONSTANTS_FILE"
+            sed -i "s/^GAME_FILTER_TCP_PORTS=.*/GAME_FILTER_TCP_PORTS=\"$GAMEFILTER_OFF\"/" "$CONSTANTS_FILE"
+            sed -i "s/^GAME_FILTER_UDP_PORTS=.*/GAME_FILTER_UDP_PORTS=\"$GAMEFILTER_ON\"/" "$CONSTANTS_FILE"
 
             echo "GameFilter: UDP включен, TCP выключен"
             ;;
 
         3)
-            sed -i "s/^GAME_FILTER_TCP_PORTS=.*/GAME_FILTER_TCP_PORTS=\"$TCP_ON\"/" "$CONSTANTS_FILE"
-            sed -i "s/^GAME_FILTER_UDP_PORTS=.*/GAME_FILTER_UDP_PORTS=\"$UDP_ON\"/" "$CONSTANTS_FILE"
+            sed -i "s/^GAME_FILTER_TCP_PORTS=.*/GAME_FILTER_TCP_PORTS=\"$GAMEFILTER_ON\"/" "$CONSTANTS_FILE"
+            sed -i "s/^GAME_FILTER_UDP_PORTS=.*/GAME_FILTER_UDP_PORTS=\"$GAMEFILTER_ON\"/" "$CONSTANTS_FILE"
 
             echo "GameFilter: TCP и UDP включены"
             ;;
 
         4)
-            sed -i "s/^GAME_FILTER_TCP_PORTS=.*/GAME_FILTER_TCP_PORTS=\"$TCP_OFF\"/" "$CONSTANTS_FILE"
-            sed -i "s/^GAME_FILTER_UDP_PORTS=.*/GAME_FILTER_UDP_PORTS=\"$UDP_OFF\"/" "$CONSTANTS_FILE"
+            sed -i "s/^GAME_FILTER_TCP_PORTS=.*/GAME_FILTER_TCP_PORTS=\"$GAMEFILTER_OFF\"/" "$CONSTANTS_FILE"
+            sed -i "s/^GAME_FILTER_UDP_PORTS=.*/GAME_FILTER_UDP_PORTS=\"$GAMEFILTER_OFF\"/" "$CONSTANTS_FILE"
 
             echo "GameFilter полностью выключен"
             ;;
@@ -109,30 +101,15 @@ gamefilter_menu() {
 
 get_gamefilter_status() {
 
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    CONSTANTS_FILE="$SCRIPT_DIR/../lib/constants.sh"
+    local TCP_ENABLED=0
+    local UDP_ENABLED=0
 
-    TCP_ON="1024-65535"
-    UDP_ON="1024-65535"
-
-    # Проверяем наличие файла
-    if [ ! -f "$CONSTANTS_FILE" ]; then
-        echo "UNKNOWN"
-        return 1
+    if [ "$GAME_FILTER_TCP_PORTS" = "$GAMEFILTER_ON" ]; then
+        local TCP_ENABLED=1
     fi
 
-    # Загружаем переменные
-    . "$CONSTANTS_FILE"
-
-    TCP_ENABLED=0
-    UDP_ENABLED=0
-
-    if [ "$GAME_FILTER_TCP_PORTS" = "$TCP_ON" ]; then
-        TCP_ENABLED=1
-    fi
-
-    if [ "$GAME_FILTER_UDP_PORTS" = "$UDP_ON" ]; then
-        UDP_ENABLED=1
+    if [ "$GAME_FILTER_UDP_PORTS" = "$GAMEFILTER_ON" ]; then
+        local UDP_ENABLED=1
     fi
 
     # Возвращаем статус

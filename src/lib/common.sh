@@ -404,17 +404,17 @@ run_zapret() {
     sleep 1
 
     # Установка USE_GAME_FILTER
-    if [ "$gamefiltertcp" == "true" ]; then
+    if [ "$gamefiltertcp" == "true" -a "$gamefilterudp" == "true" ]; then
+        USE_GAME_FILTER=true
+        log "GameFilterTCP и GameFilterUDP включен"
+
+    elif [ "$gamefiltertcp" == "true" ]; then
         USE_GAME_FILTER=true
         log "GameFilterTCP включен"
 
     elif [ "$gamefilterudp" == "true" ]; then
         USE_GAME_FILTER=true
         log "GameFilterUDP включен"
-
-    elif [ "$gamefiltertcp" == "true" -a "$gamefilterudp" == "true" ]; then
-        USE_GAME_FILTER=true
-        log "GameFilterTCP и GameFilterUDP включен"
 
     else
         USE_GAME_FILTER=false
