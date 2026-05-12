@@ -61,7 +61,7 @@ check_conf_file() {
         return 1
     fi
 
-    local required_fields=("interface" "gamefilter" "strategy")
+    local required_fields=("interface" "gamefiltertcp" "gamefilterudp" "strategy")
     for field in "${required_fields[@]}"; do
         if ! grep -q "^${field}=[^[:space:]]" "$conf_file"; then
             return 1
@@ -80,7 +80,7 @@ load_config() {
 
     source "$conf_file"
 
-    if [[ -z "$interface" ]] || [[ -z "$gamefilter" ]] || [[ -z "$strategy" ]]; then
+    if [[ -z "$interface" ]] || [[ -z "$gamefiltertcp" ]] || [[ -z "$gamefilterudp" ]] || [[ -z "$strategy" ]]; then
         handle_error "Отсутствуют обязательные параметры в конфигурационном файле"
     fi
 }
@@ -394,7 +394,7 @@ start_nfqws() {
 # -----------------------------------------------------------------------------
 
 # Запуск zapret с указанной конфигурацией
-# Использует глобальные переменные из conf.env: interface, gamefilter, strategy
+# Использует глобальные переменные из conf.env: interface, gamefiltertcp, gamefilterudp, strategy
 # Требует: REPO_DIR, NFQWS_PATH, STOP_SCRIPT
 run_zapret() {
     # Остановка предыдущего экземпляра
@@ -404,9 +404,18 @@ run_zapret() {
     sleep 1
 
     # Установка USE_GAME_FILTER
-    if [ "$gamefilter" == "true" ]; then
+    if [ "$gamefiltertcp" == "true" -a "$gamefilterudp" == "true" ]; then
         USE_GAME_FILTER=true
-        log "GameFilter включен"
+        log "GameFilterTCP и GameFilterUDP включен"
+
+    elif [ "$gamefiltertcp" == "true" ]; then
+        USE_GAME_FILTER=true
+        log "GameFilterTCP включен"
+
+    elif [ "$gamefilterudp" == "true" ]; then
+        USE_GAME_FILTER=true
+        log "GameFilterUDP включен"
+
     else
         USE_GAME_FILTER=false
         log "GameFilter выключен"

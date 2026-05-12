@@ -32,22 +32,31 @@ create_conf_file() {
         echo "Неверный выбор. Попробуйте еще раз."
     done
 
-    # 2. Gamefilter
-    read -p "Включить Gamefilter? [y/N] [n]: " enable_gamefilter
+    # 2. GamefilterTCP
+    read -p "Включить GamefilterTCP? [y/N] [n]: " enable_gamefilter
     if [[ "$enable_gamefilter" =~ ^[Yy1] ]]; then
-        gamefilter_choice="true"
+        local gamefilter_choice_tcp="true"
     else
-        gamefilter_choice="false"
+        local gamefilter_choice_tcp="false"
     fi
 
-    # 3. Выбор стратегии
+    # 3. GamefilterUDP
+    read -p "Включить GamefilterUDP? [y/N] [n]: " enable_gamefilter
+    if [[ "$enable_gamefilter" =~ ^[Yy1] ]]; then
+        local gamefilter_choice_udp="true"
+    else
+        local gamefilter_choice_udp="false"
+    fi
+
+    # 4. Выбор стратегии
     select_strategy_interactive
     local strategy_choice="$selected_strategy"
 
     # Записываем полученные значения в conf.env
     cat <<EOF >"$CONF_FILE"
 interface=$chosen_interface
-gamefilter=$gamefilter_choice
+gamefiltertcp=$gamefilter_choice_tcp
+gamefilterudp=$gamefilter_choice_udp
 strategy=$strategy_choice
 EOF
 
@@ -84,7 +93,8 @@ show_config() {
 update_config() {
     local strategy="$1"
     local interface="${2:-any}"
-    local gamefilter="$3"
+    local gamefiltertcp="$3"
+    local gamefilterudp="$4"
 
     # Валидация и нормализация названия стратегии
     local normalized_strategy
@@ -106,7 +116,8 @@ update_config() {
 
     cat > "$CONF_FILE" << ENV
 interface=${interface}
-gamefilter=${gamefilter}
+gamefiltertcp=${gamefiltertcp}
+gamefilterudp=${gamefilterudp}
 strategy=${normalized_strategy}
 ENV
 
@@ -128,7 +139,8 @@ show_config_usage() {
     echo "    set <STRATEGY> [INTERFACE]   Set configuration"
     echo
     echo "Options for 'set':"
-    echo "    -g, --gamefilter    Enable gamefilter"
+    echo "    -gt, --gamefiltertcp    Enable gamefiltertcp"
+    echo "    -gu, --gamefilterudp    Enable gamefilterudp"
     echo "    -n, --norestart     Do not restart the service"
     echo
     echo "Examples:"
@@ -149,15 +161,20 @@ handle_config_command() {
         set)
             shift
             # Парсинг флагов для set
-            local gamefilter=false
+            local gamefiltertcp=false
+            local gamefilterudp=false
             local restart_svc=true
             local strategy=""
             local iface="any"
 
             while [[ $# -gt 0 ]]; do
                 case $1 in
-                    -g|--gamefilter)
-                        gamefilter=true
+                    -gt|--gamefiltertcp)
+                        gamefiltertcp=true
+                        shift
+                        ;;
+                    -gu|--gamefilterudp)
+                        gamefilterudp=true
                         shift
                         ;;
                     -n|--norestart)
@@ -191,7 +208,7 @@ handle_config_command() {
             fi
 
             RESTART_SERVICE=$restart_svc
-            update_config "$strategy" "$iface" "$gamefilter"
+            update_config "$strategy" "$iface" "$gamefiltertcp" "$gamefilterudp"
             ;;
         -h|--help|"")
             show_config_usage

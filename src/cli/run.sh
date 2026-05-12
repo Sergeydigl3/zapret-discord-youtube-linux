@@ -14,7 +14,8 @@ show_run_usage() {
     echo "    -c, --config FILE       Load configuration from file"
     echo "    -s, --strategy NAME     Use specific strategy"
     echo "    -i, --interface NAME    Network interface (default: any)"
-    echo "    -g, --gamefilter        Enable gamefilter"
+    echo "    -gt, --gamefiltertcp        Enable gamefiltertcp"
+    echo "    -gu, --gamefilterudp        Enable gamefilterudp"
     echo "    -h, --help              Show this help"
     echo
     echo "Modes:"
@@ -40,7 +41,8 @@ run_zapret_command() {
     local use_config=""
     local use_strategy=""
     local use_interface="any"
-    local use_gamefilter="false"
+    local use_gamefilter_tcp="false"
+    local use_gamefilter_udp="false"
     local interactive=true
 
     # Парсинг аргументов
@@ -60,8 +62,12 @@ run_zapret_command() {
                 use_interface="$2"
                 shift 2
                 ;;
-            -g|--gamefilter)
-                use_gamefilter="true"
+            -gt|--gamefiltertcp)
+                use_gamefilter_tcp="true"
+                shift
+                ;;
+            -gu|--gamefilterudp)
+                use_gamefilter_udp="true"
                 shift
                 ;;
             -h|--help)
@@ -94,10 +100,11 @@ run_zapret_command() {
 
     # Режим 2: Прямые параметры
     elif [[ -n "$use_strategy" ]]; then
-        echo "Запуск с параметрами: strategy=$use_strategy, interface=$use_interface, gamefilter=$use_gamefilter"
+        echo "Запуск с параметрами: strategy=$use_strategy, interface=$use_interface, gamefiltertcp=$use_gamefilter_tcp, gamefilterudp=$use_gamefilter_udp"
         strategy="$use_strategy"
         interface="$use_interface"
-        gamefilter="$use_gamefilter"
+        gamefiltertcp="$use_gamefilter_tcp"
+        gamefilterudp="$use_gamefilter_udp"
 
     # Режим 3: Интерактивный выбор
     elif [[ "$interactive" == true ]]; then
@@ -115,12 +122,15 @@ run_zapret_command() {
             echo "Неверный выбор. Попробуйте еще раз."
         done
 
-        # Gamefilter
-        read -p "Включить Gamefilter? [y/N]: " enable_gf
-        if [[ "$enable_gf" =~ ^[Yy1] ]]; then
-            gamefilter="true"
-        else
-            gamefilter="false"
+        #Gamefilter
+        gamefilter_status=$(get_gamefilter_status)
+        if [[ "$gamefilter_status" == "TCP" ]]; then
+            gamefiltertcp="true"
+        elif [[ "$gamefilter_status" == "UDP" ]]; then
+            gamefilterudp="true"
+        elif [[ "$gamefilter_status" == "TCP + UDP" ]]; then
+            gamefiltertcp="true"
+            gamefilterudp="true"
         fi
 
         # Выбор стратегии

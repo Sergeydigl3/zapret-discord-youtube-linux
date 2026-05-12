@@ -50,6 +50,7 @@ show_menu() {
     echo "5) Управление ярлыком на рабочем столе"
     echo "6) Настроить работу без пароля"
     echo "7) Сменить режим ipset [Текущий - $(get_mode_ipset)]"
+    echo "8) Сменить режим gamefilter [Текущий - $(get_gamefilter_status)]"
     echo "0) Выход"
     echo "=============================================================================="
     echo ""
@@ -62,6 +63,7 @@ show_menu() {
     5) show_desktop_menu ;;
     6) setup_permissions ;;
     7) change_mode_ipset "$(get_mode_ipset)" ;;
+    8) gamefilter_menu ;;
     0) exit 0 ;;
     *)
         echo "Неверный выбор."
