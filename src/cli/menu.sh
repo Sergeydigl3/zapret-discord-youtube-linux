@@ -64,14 +64,16 @@ show_menu() {
     7) change_mode_ipset "$(get_mode_ipset)" ;;
     0) exit 0 ;;
     *)
-        echo "Неверный выбор."
+        read -p "Неверный выбор"
         ;;
     esac
 }
 
 # Запуск интерактивного меню
 run_interactive() {
-    show_menu
+    while true; do
+        show_menu
+    done
     echo ""
     read -p "Нажмите Enter для выхода..."
 }
