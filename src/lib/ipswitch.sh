@@ -1,8 +1,17 @@
 #!/usr/bin/env bash
 
+SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")/../..")"
+REPO_DIR="$SCRIPT_DIR/zapret-latest"
+source "$SCRIPT_DIR/src/lib/constants.sh"
+source "$SCRIPT_DIR/src/lib/common.sh"
+
+# Глобальные переменные
+ipset="$REPO_DIR/lists/ipset-all.txt"
+bipset="$REPO_DIR/lists/ipset-all.txt.backup"
+
 change_mode_ipset(){
-    if [[ $# != 1 ]]; then
-        handle_error "Не приложен mode или приложено более двух аргументов"
+    if [[ $# -lt 1 ]]; then
+        handle_error "Не приложены аргументы"
     fi
 
     mode="$1"
@@ -12,32 +21,43 @@ change_mode_ipset(){
         return 0
     fi
 
-    local ipset="$REPO_DIR/lists/ipset-all.txt"
-    local bipset="$REPO_DIR/lists/ipset-all.txt.backup"
 
-
-    if [[ "$mode" == "None (Только Lists)" ]]; then
-        rm -rf "$ipset"
-        touch "$ipset"
-        echo "Выбранный режим - $(get_mode_ipset)"
-    elif [[ "$mode" == "Any (Весь траффик)" ]]; then
-        if [ -f "$bipset" ]; then
-            rm -rf "$ipset"
-            cp "$bipset" "$ipset"
-            echo "Выбранный режим - $(get_mode_ipset)"
-            return 0
-        fi
-        handle_error "Не найден бекап, переустановите zapret стратегии."
+    if [[ "$mode" == "$NONE" ]]; then
+        switch_to_any
+    elif [[ "$mode" == "$ANY" ]]; then
+        switch_to_loaded
     else
-        if [ -f "$bipset" ]; then
-            rm -rf "$bipset"
-        fi
-        cp "$ipset" "$bipset"
-        echo "203.0.113.113/32" > "$ipset"
+        switch_to_none
+    fi
+}
+
+switch_to_none(){
+    if [ -f "$bipset" ]; then
+        rm -rf "$bipset"
+    fi
+    cp "$ipset" "$bipset"
+    echo "203.0.113.113/32" > "$ipset"
+    echo "Выбранный режим - $(get_mode_ipset)"
+    return 0
+}
+
+switch_to_any(){
+    rm -rf "$ipset"
+    touch "$ipset"
+    echo "Выбранный режим - $(get_mode_ipset)"
+    return 0
+}
+
+switch_to_loaded(){
+    if [ -f "$bipset" ]; then
+        rm -rf "$ipset"
+        cp "$bipset" "$ipset"
         echo "Выбранный режим - $(get_mode_ipset)"
         return 0
     fi
+    handle_error "Не найден бекап, переустановите zapret стратегии."
 }
+
 
 get_mode_ipset(){
     local ipset="$REPO_DIR/lists/ipset-all.txt"
@@ -51,11 +71,11 @@ get_mode_ipset(){
         touch "$ipset"
     fi
 
-    if grep -q "203.0.113.113" "$ipset"; then
-        echo "None (Только Lists)"
+    if grep -q "203.0.113.113/32" "$ipset"; then
+        echo "$NONE"
     elif [[ $(wc -l < "$ipset") == 0 ]]; then
-        echo "Any (Весь траффик)"
+        echo "$ANY"
     else
-        echo "Loaded (Только то что в Ipset)"
+        echo "$LOADED"
     fi
 }
