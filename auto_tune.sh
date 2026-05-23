@@ -125,7 +125,7 @@ set_configuration(){
 
     strategy=$1
     
-    echo -e "interface=any\ngamefilter=false\nstrategy=$strategy" > "$SCRIPT_DIR"/conf.env
+    echo -e "interface=any\ngamefiltertcp=false\ngamefilterudp=false\nstrategy=$strategy" > "$SCRIPT_DIR"/conf.env
     "$SERVICE_SCRIPT" service install >> /dev/null 2>&1
     sleep 2
 }
