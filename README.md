@@ -90,7 +90,8 @@ cd zapret-discord-youtube-linux
 ```bash
 strategy=general.bat
 interface=enp0s3
-gamefilter=true
+gamefiltertcp=true
+gamefiterudp=true
 ```
 
 ## Управление через CLI
@@ -128,7 +129,7 @@ gamefilter=true
 
 # Прямые параметры
 ./service.sh run -s general.bat -i enp0s3
-./service.sh run -s general.bat -i enp0s3 -g  # с gamefilter
+./service.sh run -s general.bat -i enp0s3 -gt -gu  # с gamefiltertcp и gamefilterudp
 ```
 
 ### Управление системным сервисом
@@ -163,7 +164,7 @@ gamefilter=true
 
 # Установить конфигурацию напрямую
 ./service.sh config set general.bat
-./service.sh config set general.bat enp0s3 -g  # с gamefilter
+./service.sh config set general.bat enp0s3 -gt -gu  # с gamefiltertcp и gamefilterudp
 ./service.sh config set discord -n             # без перезапуска сервиса
 ```
 
