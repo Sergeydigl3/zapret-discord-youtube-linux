@@ -62,7 +62,8 @@ create_test_config() {
     local strategy="$1"
     cat > "$BASE_DIR/conf.env" <<EOF
 interface=any
-gamefilter=false
+gamefiltertcp=false
+gamefilterudp=false
 strategy=$strategy
 EOF
 }

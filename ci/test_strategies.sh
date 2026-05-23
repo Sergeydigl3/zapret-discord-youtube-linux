@@ -114,7 +114,8 @@ test_strategy() {
     tmp_conf=$(mktemp --suffix=.env)
     cat > "$tmp_conf" <<EOF
 interface=any
-gamefilter=false
+gamefiltertcp=false
+gamefilterudp=false
 strategy=$strategy
 EOF
 
