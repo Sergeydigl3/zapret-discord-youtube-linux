@@ -97,6 +97,10 @@ gamefilter_menu() {
             return 1
             ;;
     esac
+
+    # Обновляем переменные в памяти после изменения файла
+    unset _CONSTANTS_SH_LOADED
+    . "$CONSTANTS_FILE"
 }
 
 get_gamefilter_status() {
