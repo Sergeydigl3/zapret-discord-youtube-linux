@@ -52,12 +52,26 @@ create_conf_file() {
     select_strategy_interactive
     local strategy_choice="$selected_strategy"
 
+    # 5. Выбор бэкенда файрвола
+    echo ""
+    echo "Выберите бэкенд файрвола:"
+    echo "1) auto (автоопределение: nftables > iptables)"
+    echo "2) nftables"
+    echo "3) iptables"
+    read -p "Ваш выбор [1]: " fw_choice
+    local fw_backend="auto"
+    case "$fw_choice" in
+        2) fw_backend="nftables" ;;
+        3) fw_backend="iptables" ;;
+    esac
+
     # Записываем полученные значения в conf.env
     cat <<EOF >"$CONF_FILE"
 interface=$chosen_interface
 gamefiltertcp=$gamefilter_choice_tcp
 gamefilterudp=$gamefilter_choice_udp
 strategy=$strategy_choice
+firewall_backend=$fw_backend
 EOF
 
     if [[ "$is_editing" == true ]]; then
@@ -95,6 +109,7 @@ update_config() {
     local interface="${2:-any}"
     local gamefiltertcp="$3"
     local gamefilterudp="$4"
+    local firewall_backend="${5:-auto}"
 
     # Валидация и нормализация названия стратегии
     local normalized_strategy
@@ -119,6 +134,7 @@ interface=${interface}
 gamefiltertcp=${gamefiltertcp}
 gamefilterudp=${gamefilterudp}
 strategy=${normalized_strategy}
+firewall_backend=${firewall_backend}
 ENV
 
     echo "Конфигурация обновлена."
@@ -139,14 +155,16 @@ show_config_usage() {
     echo "    set <STRATEGY> [INTERFACE]   Set configuration"
     echo
     echo "Options for 'set':"
-    echo "    -gt, --gamefiltertcp    Enable gamefiltertcp"
-    echo "    -gu, --gamefilterudp    Enable gamefilterudp"
-    echo "    -n, --norestart     Do not restart the service"
+    echo "    -gt, --gamefiltertcp        Enable gamefiltertcp"
+    echo "    -gu, --gamefilterudp        Enable gamefilterudp"
+    echo "    -fb, --firewall-backend <BACKEND>   Firewall backend: auto, nftables, iptables"
+    echo "    -n, --norestart             Do not restart the service"
     echo
     echo "Examples:"
     echo "    $(basename "$0") config show"
     echo "    $(basename "$0") config set discord"
     echo "    $(basename "$0") config set discord eth0 -g"
+    echo "    $(basename "$0") config set discord eth0 -fb iptables"
 }
 
 # Обработчик команды config
@@ -166,6 +184,7 @@ handle_config_command() {
             local restart_svc=true
             local strategy=""
             local iface="any"
+            local fw_backend="auto"
 
             while [[ $# -gt 0 ]]; do
                 case $1 in
@@ -176,6 +195,10 @@ handle_config_command() {
                     -gu|--gamefilterudp)
                         gamefilterudp=true
                         shift
+                        ;;
+                    -fb|--firewall-backend)
+                        fw_backend="$2"
+                        shift 2
                         ;;
                     -n|--norestart)
                         restart_svc=false
@@ -208,7 +231,7 @@ handle_config_command() {
             fi
 
             RESTART_SERVICE=$restart_svc
-            update_config "$strategy" "$iface" "$gamefiltertcp" "$gamefilterudp"
+            update_config "$strategy" "$iface" "$gamefiltertcp" "$gamefilterudp" "$fw_backend"
             ;;
         -h|--help|"")
             show_config_usage

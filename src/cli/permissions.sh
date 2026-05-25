@@ -7,7 +7,7 @@
 show_permissions_usage() {
     echo "Usage: $(basename "$0") setup-permissions [command]"
     echo
-    echo "Настройка NOPASSWD для nft и nfqws."
+    echo "Настройка NOPASSWD для nft, iptables, ip6tables и nfqws."
     echo
     echo "Commands:"
     echo "    (без аргументов)  Создать /etc/sudoers.d/zapret"

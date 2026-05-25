@@ -15,7 +15,7 @@ show_usage() {
     echo "    download-deps  Download/update dependencies (zapret + strategies)"
     echo "    desktop        Manage desktop shortcut"
     echo "    run            Run interactively (without installing service)"
-    echo "    setup-permissions  Setup NOPASSWD for nft/nfqws"
+    echo "    setup-permissions  Setup NOPASSWD for nft/iptables/nfqws"
     echo
     echo "Internal commands:"
     echo "    daemon         Run zapret daemon (called by service)"
@@ -66,16 +66,14 @@ show_menu() {
     8) gamefilter_menu ;;
     0) exit 0 ;;
     *)
-        read -p "Неверный выбор"
+        echo "Неверный выбор."
         ;;
     esac
 }
 
 # Запуск интерактивного меню
 run_interactive() {
-    while true; do
-        show_menu
-    done
+    show_menu
     echo ""
     read -p "Нажмите Enter для выхода..."
 }

@@ -154,12 +154,12 @@ run_daemon() {
     run_zapret_command --config "$CONF_FILE"
 }
 
-# Остановка zapret (nfqws + nftables)
+# Остановка zapret (nfqws + firewall rules)
 stop_zapret() {
     source "$BASE_DIR/src/lib/firewall.sh"
     log "Остановка nfqws..."
     stop_nfqws
-    log "Очистка правил nftables..."
-    nft_clear
+    log "Очистка правил файрвола..."
+    firewall_clear
     log "Очистка завершена."
 }

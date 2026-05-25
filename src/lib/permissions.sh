@@ -22,11 +22,16 @@ generate_sudoers_content() {
     local nft_path=$(get_cmd_path nft)
     local pkill_path=$(get_cmd_path pkill)
 
+    local iptables_path=$(get_cmd_path iptables)
+    local ip6tables_path=$(get_cmd_path ip6tables)
+
     cat <<EOF
 # Zapret Discord YouTube - NOPASSWD для $user
 # Файл: $SUDOERS_FILE
 
 $user ALL=(root) NOPASSWD: $nft_path *
+$user ALL=(root) NOPASSWD: $iptables_path *
+$user ALL=(root) NOPASSWD: $ip6tables_path *
 $user ALL=(root) NOPASSWD: $nfqws_path *
 $user ALL=(root) NOPASSWD: $pkill_path -f nfqws
 EOF
@@ -88,9 +93,14 @@ generate_doas_rules() {
     local nfqws_path="${2:-$NFQWS_PATH}"
     local nft_path=$(get_cmd_path nft)
 
+    local iptables_path=$(get_cmd_path iptables)
+    local ip6tables_path=$(get_cmd_path ip6tables)
+
     cat <<EOF
 # Zapret Discord YouTube - nopass для $user
 permit nopass $user as root cmd $nft_path
+permit nopass $user as root cmd $iptables_path
+permit nopass $user as root cmd $ip6tables_path
 permit nopass $user as root cmd $nfqws_path
 permit nopass $user as root cmd pkill args -f nfqws
 EOF

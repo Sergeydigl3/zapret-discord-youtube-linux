@@ -39,13 +39,18 @@ handle_error() {
 
 check_dependencies() {
     export PATH="$PATH:/usr/local/sbin:/usr/sbin:/sbin"
-    local deps=("git" "nft" "grep" "sed" "curl")
+    local deps=("git" "grep" "sed" "curl")
 
     for dep in "${deps[@]}"; do
         if ! command -v "$dep" >/dev/null 2>&1; then
             handle_error "Не установлена утилита $dep"
-        fi   
+        fi
     done
+
+    # Проверяем наличие хотя бы одного бэкенда файрвола
+    if ! command -v nft &>/dev/null && ! command -v iptables &>/dev/null; then
+        handle_error "Не установлен nftables или iptables. Установите один из них."
+    fi
 }
 
 # -----------------------------------------------------------------------------
@@ -67,6 +72,12 @@ check_conf_file() {
             return 1
         fi
     done
+
+    # firewall_backend опционален — по умолчанию auto
+    if ! grep -q "^firewall_backend=" "$conf_file"; then
+        echo "firewall_backend=auto" >> "$conf_file"
+    fi
+
     return 0
 }
 
@@ -83,6 +94,9 @@ load_config() {
     if [[ -z "$interface" ]] || [[ -z "$gamefiltertcp" ]] || [[ -z "$gamefilterudp" ]] || [[ -z "$strategy" ]]; then
         handle_error "Отсутствуют обязательные параметры в конфигурационном файле"
     fi
+
+    # По умолчанию автоопределение бэкенда
+    FIREWALL_BACKEND="${firewall_backend:-auto}"
 }
 
 # -----------------------------------------------------------------------------
@@ -400,7 +414,7 @@ run_zapret() {
     # Остановка предыдущего экземпляра
     source "$BASE_DIR/src/lib/firewall.sh"
     stop_nfqws
-    nft_clear
+    firewall_clear
     sleep 1
 
     # Установка USE_GAME_FILTER
@@ -431,11 +445,12 @@ run_zapret() {
     # Парсим стратегию
     parse_bat_file "$strategy_path"
 
-    # Настройка nftables
-    log "Настройка nftables..."
-    nft_setup "$tcp_ports" "$udp_ports" "$interface" ||
-        handle_error "Ошибка при настройке nftables"
-    log "Настройка nftables завершена (TCP: $tcp_ports, UDP: $udp_ports)"
+    # Настройка файрвола
+    local backend
+    backend=$(detect_firewall_backend) || handle_error "Не удалось определить бэкенд файрвола"
+    log "Настройка $backend..."
+    firewall_setup "$tcp_ports" "$udp_ports" "$interface" ||
+        handle_error "Ошибка при настройке $backend"
 
     # Запуск nfqws
     start_nfqws

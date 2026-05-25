@@ -11,12 +11,19 @@ _CONSTANTS_SH_LOADED=1
 # Имя сервиса (используется во всех init-backends)
 SERVICE_NAME="zapret_discord_youtube"
 
+# Выбор бэкенда файрвола: auto, nftables, iptables
+FIREWALL_BACKEND="auto"
+
 # nftables настройки
 NFT_TABLE="inet zapretunix"
 NFT_CHAIN="output"
 NFT_QUEUE_NUM=220
 NFT_MARK="0x40000000"
 NFT_RULE_COMMENT="Added by zapret script"
+
+# iptables настройки
+IPT_CHAIN="output"
+IPT_TABLE="mangle"
 
 # Ipset настройки
 LOADED="Loaded (Ipset + Lists)"
