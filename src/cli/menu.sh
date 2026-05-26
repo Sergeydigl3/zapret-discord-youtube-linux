@@ -66,7 +66,8 @@ show_menu() {
     8) gamefilter_menu ;;
     0) exit 0 ;;
     *)
-        read -p "Неверный выбор"
+        echo "Неверный выбор"
+        read -p "Нажмите Enter для продолжения..."
         ;;
     esac
 }

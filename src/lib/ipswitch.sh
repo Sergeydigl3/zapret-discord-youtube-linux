@@ -11,13 +11,16 @@ bipset="$REPO_DIR/lists/ipset-all.txt.backup"
 
 change_mode_ipset(){
     if [[ $# -lt 1 ]]; then
-        handle_error "Не приложены аргументы"
+        echo "Не приложены аргументы"
+        read -p "Нажмите Enter для продолжения..."
+        return 0
     fi
 
     mode="$1"
 
     if [[ "$mode" == "Текущая версия конфигураций не поддерживается" ]]; then
         handle_error "Текущая версия конфигураций не поддерживается. Для смены ipset режима вам следует поменять версию на более новую."
+        read -p "Нажмите Enter для продолжения..."
         return 0
     fi
 
@@ -38,6 +41,7 @@ switch_to_none(){
     cp "$ipset" "$bipset"
     echo "203.0.113.113/32" > "$ipset"
     echo "Выбранный режим - $(get_mode_ipset)"
+    read -p "Нажмите Enter для продолжения..."
     return 0
 }
 
@@ -45,6 +49,7 @@ switch_to_any(){
     rm -rf "$ipset"
     touch "$ipset"
     echo "Выбранный режим - $(get_mode_ipset)"
+    read -p "Нажмите Enter для продолжения..."
     return 0
 }
 
@@ -53,9 +58,12 @@ switch_to_loaded(){
         rm -rf "$ipset"
         cp "$bipset" "$ipset"
         echo "Выбранный режим - $(get_mode_ipset)"
+        read -p "Нажмите Enter для продолжения..."
         return 0
     fi
-    handle_error "Не найден бекап, переустановите zapret стратегии."
+    echo "Не найден бекап, переустановите zapret стратегии."
+    read -p "Нажмите Enter для продолжения..."
+    return 0
 }
 
 

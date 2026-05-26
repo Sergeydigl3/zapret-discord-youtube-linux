@@ -24,6 +24,7 @@ show_download_deps_usage() {
 
 # Подменю управления зависимостями
 show_dependencies_menu() {
+    clear
     echo ""
     echo "=== Управление зависимостями ==="
     echo "1. Скачать зависимости (интерактивный выбор версий)"
@@ -34,17 +35,22 @@ show_dependencies_menu() {
     case $choice in
     1)
         handle_download_deps_command
+        read -p "Нажмите Enter для продолжения..."
         ;;
     2)
         handle_download_deps_command --default
+        read -p "Нажмите Enter для продолжения..."
         ;;
     3)
         show_strategies
         read -p "Нажмите Enter для продолжения..."
+        show_dependencies_menu
         ;;
     0) return ;;
     *)
         echo "Неверный выбор."
+        read -p "Нажмите Enter для продолжения..."
+        show_dependencies_menu
         ;;
     esac
 }
@@ -133,4 +139,6 @@ handle_download_deps_command() {
         echo ""
         echo "Пропуск загрузки стратегий"
     fi
+
+    return 0
 }

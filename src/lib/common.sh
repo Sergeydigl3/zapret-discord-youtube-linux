@@ -200,12 +200,14 @@ ensure_config_exists() {
             create_conf_file
         else
             echo "Операция отменена."
-            return 1
+            read -p "Нажмите Enter для продолжения..."
+            return 0
         fi
         # Перепроверяем конфигурацию
         if ! check_conf_file; then
             echo "Файл конфигурации всё ещё некорректен. Операция отменена."
-            return 1
+            read -p "Нажмите Enter для продолжения..."
+            return 0
         fi
     fi
     return 0

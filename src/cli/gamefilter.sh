@@ -64,6 +64,7 @@ gamefilter_menu() {
             sed -i "s/^GAME_FILTER_UDP_PORTS=.*/GAME_FILTER_UDP_PORTS=\"$GAMEFILTER_OFF\"/" "$CONSTANTS_FILE"
 
             echo "GameFilter: TCP включен, UDP выключен"
+            read -p "Нажмите Enter для продолжения..."
             ;;
 
         2)
@@ -71,6 +72,7 @@ gamefilter_menu() {
             sed -i "s/^GAME_FILTER_UDP_PORTS=.*/GAME_FILTER_UDP_PORTS=\"$GAMEFILTER_ON\"/" "$CONSTANTS_FILE"
 
             echo "GameFilter: UDP включен, TCP выключен"
+            read -p "Нажмите Enter для продолжения..."
             ;;
 
         3)
@@ -78,6 +80,7 @@ gamefilter_menu() {
             sed -i "s/^GAME_FILTER_UDP_PORTS=.*/GAME_FILTER_UDP_PORTS=\"$GAMEFILTER_ON\"/" "$CONSTANTS_FILE"
 
             echo "GameFilter: TCP и UDP включены"
+            read -p "Нажмите Enter для продолжения..."
             ;;
 
         4)
@@ -85,6 +88,7 @@ gamefilter_menu() {
             sed -i "s/^GAME_FILTER_UDP_PORTS=.*/GAME_FILTER_UDP_PORTS=\"$GAMEFILTER_OFF\"/" "$CONSTANTS_FILE"
 
             echo "GameFilter полностью выключен"
+            read -p "Нажмите Enter для продолжения..."
             ;;
 
         0)
@@ -94,7 +98,8 @@ gamefilter_menu() {
 
         *)
             echo "Неверный выбор!"
-            return 1
+            read -p "Нажмите Enter для продолжения..."
+            gamefilter_menu
             ;;
     esac
 

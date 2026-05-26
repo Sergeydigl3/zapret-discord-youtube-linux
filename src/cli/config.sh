@@ -21,7 +21,9 @@ create_conf_file() {
     # 1. Выбор интерфейса
     local interfaces=("any" $(ls /sys/class/net))
     if [ ${#interfaces[@]} -eq 0 ]; then
-        handle_error "Не найдены сетевые интерфейсы"
+        echo "Не найдены сетевые интерфейсы"
+        read -p "Нажмите Enter для продолжения..."
+        return 0
     fi
     echo "Доступные сетевые интерфейсы:"
     select chosen_interface in "${interfaces[@]}"; do
@@ -89,6 +91,11 @@ EOF
     else
         echo "Конфигурация записана в $CONF_FILE."
     fi
+
+    echo "Текущяя конфигурация:"
+    cat "$CONF_FILE"
+
+    read -p "Нажмите Enter для продолжения..."
 }
 
 # Функция для вывода текущей конфигурации

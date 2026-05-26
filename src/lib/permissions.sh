@@ -45,7 +45,8 @@ setup_sudoers() {
     # Проверяем директорию sudoers.d
     if [[ ! -d "/etc/sudoers.d" ]]; then
         echo "Ошибка: /etc/sudoers.d не существует"
-        return 1
+        read -p "Нажмите Enter для продолжения..."
+        return 0
     fi
 
     local content
@@ -59,14 +60,16 @@ setup_sudoers() {
     echo ""
 
     read -p "Создать? [Y/n]: " confirm
-    if [[ "${confirm:-Y}" =~ ^[Nn]$ ]]; then
+    if [[ ! "${confirm:-Y}" =~ ^[Yy]$ ]]; then
         echo "Отменено"
-        return 1
+        read -p "Нажмите Enter для продолжения..."
+        return 0
     fi
 
     echo "$content" | elevate tee "$SUDOERS_FILE" > /dev/null || {
         echo "Ошибка записи $SUDOERS_FILE"
-        return 1
+        read -p "Нажмите Enter для продолжения..."
+        return 0
     }
 
     elevate chmod 440 "$SUDOERS_FILE"
@@ -76,11 +79,13 @@ setup_sudoers() {
         if ! elevate visudo -c -f "$SUDOERS_FILE" 2>/dev/null; then
             echo "Ошибка синтаксиса! Удаляю файл..."
             elevate rm -f "$SUDOERS_FILE"
-            return 1
+            read -p "Нажмите Enter для продолжения..."
+            return 0
         fi
     fi
 
     echo "Готово: $SUDOERS_FILE"
+    read -p "Нажмите Enter для продолжения..."
     return 0
 }
 
@@ -124,7 +129,8 @@ setup_doas() {
     read -p "Добавить? [Y/n]: " confirm
     if [[ "${confirm:-Y}" =~ ^[Nn]$ ]]; then
         echo "Отменено"
-        return 1
+        read -p "Нажмите Enter для продолжения..."
+        return 0
     fi
 
     # Проверяем, есть ли уже наши правила
@@ -135,6 +141,8 @@ setup_doas() {
             # Удаляем старый блок (от маркера до пустой строки или конца)
             elevate sed -i '/# Zapret Discord YouTube/,/^$/d' "$DOAS_CONF"
         else
+            echo "Отменено"
+            read -p "Нажмите Enter для продолжения..."
             return 0
         fi
     fi
@@ -145,10 +153,12 @@ setup_doas() {
         echo "$rules"
     } | elevate tee -a "$DOAS_CONF" > /dev/null || {
         echo "Ошибка записи в $DOAS_CONF"
-        return 1
+        read -p "Нажмите Enter для продолжения..."
+        return 0
     }
 
     echo "Готово: правила добавлены в $DOAS_CONF"
+    read -p "Нажмите Enter для продолжения..."
     return 0
 }
 
@@ -161,7 +171,8 @@ setup_permissions() {
     local system
     system=$(get_elevate_cmd) || {
         echo "Ошибка: не найден sudo или doas"
-        return 1
+        read -p "Нажмите Enter для продолжения..."
+        return 0
     }
 
     echo "Настройка NOPASSWD для $user..."
@@ -173,6 +184,10 @@ setup_permissions() {
             ;;
         doas)
             setup_doas "$user"
+            ;;
+        "")
+            # Для запуска от root
+            setup_sudoers "$user"
             ;;
     esac
 }

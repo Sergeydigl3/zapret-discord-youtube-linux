@@ -6,7 +6,9 @@
 
 # Ленивая загрузка init backend
 _load_init_backend() {
-    [[ -z "${INIT_SYS:-}" ]] && source "$HOME_DIR_PATH/src/init-backends/init.sh"
+    if [[ -z "${INIT_SYS:-}" ]]; then
+        source "$HOME_DIR_PATH/src/init-backends/init.sh"
+    fi
 }
 
 # Справка для service
@@ -25,45 +27,49 @@ show_service_usage() {
 # Подменю управления сервисом
 show_service_menu() {
     _load_init_backend
-    local status=0
-    check_service_status || status=$?
 
-    echo ""
-    case $status in
-    1)
-        echo "1. Установить и запустить сервис"
-        echo "0. Назад"
-        read -p "Выберите действие: " choice
-        case $choice in
-        1) ensure_config_exists && install_service ;;
-        0) return ;;
+    while true; do
+        clear
+        local status=0
+        check_service_status || status=$?
+
+        echo ""
+        case $status in
+        1)
+            echo "1. Установить и запустить сервис"
+            echo "0. Назад"
+            read -p "Выберите действие: " choice
+            case $choice in
+            1) ensure_config_exists && install_service ; read -p "Нажмите Enter для продолжения..." ;;
+            0) break ;;
+            esac
+            ;;
+        2)
+            echo "1. Остановить сервис"
+            echo "2. Перезапустить сервис"
+            echo "3. Удалить сервис"
+            echo "0. Назад"
+            read -p "Выберите действие: " choice
+            case $choice in
+            1) stop_service ; read -p "Нажмите Enter для продолжения..." ;;
+            2) restart_service ; read -p "Нажмите Enter для продолжения..." ;;
+            3) remove_service ; read -p "Нажмите Enter для продолжения..." ;;
+            0) break ;;
+            esac
+            ;;
+        3)
+            echo "1. Запустить сервис"
+            echo "2. Удалить сервис"
+            echo "0. Назад"
+            read -p "Выберите действие: " choice
+            case $choice in
+            1) start_service ; read -p "Нажмите Enter для продолжения..." ;;
+            2) remove_service ; read -p "Нажмите Enter для продолжения..." ;;
+            0) break ;;
+            esac
+            ;;
         esac
-        ;;
-    2)
-        echo "1. Остановить сервис"
-        echo "2. Перезапустить сервис"
-        echo "3. Удалить сервис"
-        echo "0. Назад"
-        read -p "Выберите действие: " choice
-        case $choice in
-        1) stop_service ;;
-        2) restart_service ;;
-        3) remove_service ;;
-        0) return ;;
-        esac
-        ;;
-    3)
-        echo "1. Запустить сервис"
-        echo "2. Удалить сервис"
-        echo "0. Назад"
-        read -p "Выберите действие: " choice
-        case $choice in
-        1) start_service ;;
-        2) remove_service ;;
-        0) return ;;
-        esac
-        ;;
-    esac
+    done
 }
 
 # Обработчик команды service

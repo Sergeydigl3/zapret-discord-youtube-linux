@@ -15,6 +15,7 @@ show_desktop_usage() {
 
 # Подменю управления desktop ярлыком
 show_desktop_menu() {
+    clear
     echo ""
     echo "=== Управление desktop ярлыком ==="
     echo "1. Создать ярлык в меню приложений"
@@ -33,6 +34,8 @@ show_desktop_menu() {
     0) return ;;
     *)
         echo "Неверный выбор."
+        read -p "Нажмите Enter для продолжения..."
+        show_desktop_menu
         ;;
     esac
 }
