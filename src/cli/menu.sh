@@ -6,76 +6,78 @@
 
 # Главная справка
 show_usage() {
-    echo "Usage: $(basename "$0") <command> [options]"
-    echo
-    echo "Commands:"
-    echo "    service        Manage the system service"
-    echo "    config         Manage configuration"
-    echo "    strategy       Manage strategies"
-    echo "    download-deps  Download/update dependencies (zapret + strategies)"
-    echo "    desktop        Manage desktop shortcut"
-    echo "    run            Run interactively (without installing service)"
-    echo "    setup-permissions  Setup NOPASSWD for nft/nfqws"
-    echo
-    echo "Internal commands:"
-    echo "    daemon         Run zapret daemon (called by service)"
-    echo "    kill           Stop nfqws and clear nftables"
-    echo
-    echo "Run '$(basename "$0") <command> --help' for command-specific help."
-    echo
-    echo "Examples:"
-    echo "    $(basename "$0") service install"
-    echo "    $(basename "$0") config set discord"
-    echo "    $(basename "$0") strategy list"
-    echo "    $(basename "$0") download-deps"
-    echo "    $(basename "$0") desktop install"
-    echo "    $(basename "$0") run -s discord"
+  echo "Usage: $(basename "$0") <command> [options]"
+  echo
+  echo "Commands:"
+  echo "    service        Manage the system service"
+  echo "    config         Manage configuration"
+  echo "    strategy       Manage strategies"
+  echo "    download-deps  Download/update dependencies (zapret + strategies)"
+  echo "    desktop        Manage desktop shortcut"
+  echo "    run            Run interactively (without installing service)"
+  echo "    setup-permissions  Setup NOPASSWD for nft/nfqws"
+  echo
+  echo "Internal commands:"
+  echo "    daemon         Run zapret daemon (called by service)"
+  echo "    kill           Stop nfqws and clear nftables"
+  echo
+  echo "Run '$(basename "$0") <command> --help' for command-specific help."
+  echo
+  echo "Examples:"
+  echo "    $(basename "$0") service install"
+  echo "    $(basename "$0") config set discord"
+  echo "    $(basename "$0") strategy list"
+  echo "    $(basename "$0") download-deps"
+  echo "    $(basename "$0") desktop install"
+  echo "    $(basename "$0") run -s discord"
 }
 
 # Основное меню управления
 show_menu() {
-    clear
-    echo "░▒▓████████▓▒░░▒▓██████▓▒░░▒▓███████▓▒░░▒▓███████▓▒░░▒▓████████▓▒░▒▓████████▓▒░ "
-    echo "       ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░         ░▒▓█▓▒░     "
-    echo "     ░▒▓██▓▒░░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░         ░▒▓█▓▒░     "
-    echo "   ░▒▓██▓▒░  ░▒▓████████▓▒░▒▓███████▓▒░░▒▓███████▓▒░░▒▓██████▓▒░    ░▒▓█▓▒░     "
-    echo " ░▒▓██▓▒░    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░         ░▒▓█▓▒░     "
-    echo "░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░         ░▒▓█▓▒░     "
-    echo "░▒▓████████▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓████████▓▒░  ░▒▓█▓▒░     "
-    echo "=============================================================================="
-    echo "1) Запустить (без установки сервиса)"
-    echo "2) Управление сервисом"
-    echo "3) Изменить конфигурацию"
-    echo "4) Управление зависимостями"
-    echo "5) Управление ярлыком на рабочем столе"
-    echo "6) Настроить работу без пароля"
-    echo "7) Сменить режим ipset [Текущий - $(get_mode_ipset)]"
-    echo "8) Сменить режим gamefilter [Текущий - $(get_gamefilter_status)]"
-    echo "0) Выход"
-    echo "=============================================================================="
-    echo ""
-    read -p "Выберите действие: " choice
-    case $choice in
-    1) run_zapret_command ;;
-    2) show_service_menu ;;
-    3) create_conf_file ;;
-    4) show_dependencies_menu ;;
-    5) show_desktop_menu ;;
-    6) setup_permissions ;;
-    7) change_mode_ipset "$(get_mode_ipset)" ;;
-    8) gamefilter_menu ;;
-    0) exit 0 ;;
-    *)
-        read -p "Неверный выбор"
-        ;;
-    esac
+  clear
+  echo "░▒▓████████▓▒░░▒▓██████▓▒░░▒▓███████▓▒░░▒▓███████▓▒░░▒▓████████▓▒░▒▓████████▓▒░ "
+  echo "       ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░         ░▒▓█▓▒░     "
+  echo "     ░▒▓██▓▒░░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░         ░▒▓█▓▒░     "
+  echo "   ░▒▓██▓▒░  ░▒▓████████▓▒░▒▓███████▓▒░░▒▓███████▓▒░░▒▓██████▓▒░    ░▒▓█▓▒░     "
+  echo " ░▒▓██▓▒░    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░         ░▒▓█▓▒░     "
+  echo "░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░         ░▒▓█▓▒░     "
+  echo "░▒▓████████▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓████████▓▒░  ░▒▓█▓▒░     "
+  echo "=============================================================================="
+  echo "1) Запустить (без установки сервиса)"
+  echo "2) Управление сервисом"
+  echo "3) Изменить конфигурацию"
+  echo "4) Управление зависимостями"
+  echo "5) Управление ярлыком на рабочем столе"
+  echo "6) Настроить работу без пароля"
+  echo "7) Сменить режим ipset [Текущий - $(get_mode_ipset)]"
+  echo "8) Сменить режим gamefilter [Текущий - $(get_gamefilter_status)]"
+  echo "9) Добавить домены в zapret"
+  echo "0) Выход"
+  echo "=============================================================================="
+  echo ""
+  read -p "Выберите действие: " choice
+  case $choice in
+  1) run_zapret_command ;;
+  2) show_service_menu ;;
+  3) create_conf_file ;;
+  4) show_dependencies_menu ;;
+  5) show_desktop_menu ;;
+  6) setup_permissions ;;
+  7) change_mode_ipset "$(get_mode_ipset)" ;;
+  8) gamefilter_menu ;;
+  9) handle_add_domains ;;
+  0) exit 0 ;;
+  *)
+    read -p "Неверный выбор"
+    ;;
+  esac
 }
 
 # Запуск интерактивного меню
 run_interactive() {
-    while true; do
-        show_menu
-    done
-    echo ""
-    read -p "Нажмите Enter для выхода..."
+  while true; do
+    show_menu
+  done
+  echo ""
+  read -p "Нажмите Enter для выхода..."
 }
