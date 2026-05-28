@@ -56,7 +56,7 @@ cd zapret-discord-youtube-linux
 
 Адаптер по умолчанию использует:
 - **nfqws**: v72.9 (рекомендованная версия, прописана в `src/lib/constants.sh` как `ZAPRET_RECOMMENDED_VERSION`)
-- **Стратегии**: [коммит 4f8d81b74228dd5dc11dae3fa32337b9eaa16669](https://github.com/Flowseal/zapret-discord-youtube/commit/4f8d81b74228dd5dc11dae3fa32337b9eaa16669) (прописан в `src/lib/constants.sh` как `MAIN_REPO_REV`)
+- **Стратегии**: [коммит ef19845a801e4e743f7bdfdbd58f9745c6adbd60](https://github.com/Flowseal/zapret-discord-youtube/commit/ef19845a801e4e743f7bdfdbd58f9745c6adbd60) (прописан в `src/lib/constants.sh` как `MAIN_REPO_REV`)
 
 Вы можете изменить версии:
 - Интерактивно: `./service.sh download-deps` (выбор из доступных версий)
