@@ -5,7 +5,7 @@ SERVICE_FILE="/etc/dinit.d/$SERVICE_NAME"
 
 # Функция для проверки статуса сервиса
 check_service_status() {
-    if ! elevate dinitctl list | grep -q "$SERVICE_NAME"; then
+    if [[ ! -f "$SERVICE_FILE" ]]; then
         echo "Статус: Сервис не установлен."
         return 1
     fi

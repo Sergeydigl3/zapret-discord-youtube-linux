@@ -11,12 +11,13 @@ show_run_usage() {
     echo "Run zapret in foreground (useful for testing)."
     echo
     echo "Options:"
-    echo "    -c, --config FILE       Load configuration from file"
-    echo "    -s, --strategy NAME     Use specific strategy"
-    echo "    -i, --interface NAME    Network interface (default: any)"
+    echo "    -c, --config FILE           Load configuration from file"
+    echo "    -s, --strategy NAME         Use specific strategy"
+    echo "    -i, --interface NAME        Network interface (default: any)"
+    echo "    -fb, --firewall-backend F   Firewall backend: auto, nftables, iptables"
     echo "    -gt, --gamefiltertcp        Enable gamefiltertcp"
     echo "    -gu, --gamefilterudp        Enable gamefilterudp"
-    echo "    -h, --help              Show this help"
+    echo "    -h, --help                  Show this help"
     echo
     echo "Modes:"
     echo "    1. Interactive mode (no options):"
@@ -43,6 +44,7 @@ run_zapret_command() {
     local use_interface="any"
     local use_gamefilter_tcp="false"
     local use_gamefilter_udp="false"
+    local use_firewall_backend=""
     local interactive=true
 
     # Парсинг аргументов
@@ -60,6 +62,10 @@ run_zapret_command() {
                 ;;
             -i|--interface)
                 use_interface="$2"
+                shift 2
+                ;;
+            -fb|--firewall-backend)
+                use_firewall_backend="$2"
                 shift 2
                 ;;
             -gt|--gamefiltertcp)
@@ -97,6 +103,10 @@ run_zapret_command() {
         fi
         echo "Загрузка конфигурации из: $use_config"
         load_config "$use_config"
+        # -fb может переопределить бэкенд из конфига
+        if [[ -n "$use_firewall_backend" ]]; then
+            FIREWALL_BACKEND="$use_firewall_backend"
+        fi
 
     # Режим 2: Прямые параметры
     elif [[ -n "$use_strategy" ]]; then
@@ -105,6 +115,7 @@ run_zapret_command() {
         interface="$use_interface"
         gamefiltertcp="$use_gamefilter_tcp"
         gamefilterudp="$use_gamefilter_udp"
+        FIREWALL_BACKEND="${use_firewall_backend:-auto}"
 
     # Режим 3: Интерактивный выбор
     elif [[ "$interactive" == true ]]; then
@@ -132,6 +143,19 @@ run_zapret_command() {
             gamefiltertcp="true"
             gamefilterudp="true"
         fi
+
+        # Выбор бэкенда файрвола
+        echo ""
+        echo "Выберите бэкенд файрвола:"
+        echo "1) auto (автоопределение: nftables > iptables)"
+        echo "2) nftables"
+        echo "3) iptables"
+        read -p "Ваш выбор [1]: " fw_choice
+        FIREWALL_BACKEND="auto"
+        case "$fw_choice" in
+            2) FIREWALL_BACKEND="nftables" ;;
+            3) FIREWALL_BACKEND="iptables" ;;
+        esac
 
         # Выбор стратегии
         select_strategy_interactive

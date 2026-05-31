@@ -5,7 +5,7 @@ SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
 
 # Функция для проверки статуса сервиса
 check_service_status() {
-    if ! systemctl list-unit-files | grep -q "$SERVICE_NAME.service"; then
+    if [[ ! -f "$SERVICE_FILE" ]]; then
         echo "Статус: Сервис не установлен."
         return 1
     fi
