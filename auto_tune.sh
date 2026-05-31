@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 VERSION="0.2"
 
@@ -63,7 +63,7 @@ tcp_check() {
     local result exit_code
     result=$(curl -s -o /dev/null -L -w "%{http_code}" --connect-timeout 3 --max-time 5 --tlsv1.3 --http2 "$domain")
     exit_code=$?
-    if [[ $exit_code -eq 0 && "$result" =~ ^(200|301|302|307|308|404|403)$ ]]; then
+    if [[ $exit_code -eq 0 && "$result" =~ ^(200|301|302|307|308|404|403|405)$ ]]; then
         return 0
     else
         return 1
@@ -75,7 +75,7 @@ quic_check() {
     local result exit_code
     result=$(curl -s -o /dev/null -L -w "%{http_code}" --connect-timeout 3 --max-time 5 --http3 "$domain")
     exit_code=$?
-    if [[ $exit_code -eq 0 && "$result" =~ ^(200|301|302|307|308|404|403)$ ]]; then
+    if [[ $exit_code -eq 0 && "$result" =~ ^(200|301|302|307|308|404|403|405)$ ]]; then
         return 0
     else
         return 1
