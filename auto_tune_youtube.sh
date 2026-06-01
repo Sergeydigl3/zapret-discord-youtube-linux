@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # ============================================================
 # Auto Tune для zapret
@@ -26,6 +26,9 @@ GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 BOLD='\033[1m'
+
+#Тестовое видео
+TEST_VIDEO="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 
 # ═══════════════════════════════════════════════════════════
 # ДАННЫЕ
@@ -112,6 +115,29 @@ check_youtube_cdn() {
     [[ "$code" != "000" ]]
 }
 
+# Получение videoplayback через yt-dlp
+get_videoplayback_url() {
+    yt-dlp --socket-timeout 5 -g "$TEST_VIDEO" 2>/dev/null | head -n1
+}
+# Проверка валидности ссылки videoplayback
+check_videoplayback_url() {
+   [[ $1 == https://* ]] 
+}
+# Проверка загрузки видео
+check_youtube_video(){
+    local url=$(get_videoplayback_url)
+    if check_videoplayback_url $url; then
+        local size=$(curl -s \
+            --tlsv1.3 \
+            --connect-timeout "$CURL_TIMEOUT" \
+            --max-time 10 \
+            -r 0-65535 \
+            "$url" | wc -c)
+        [[ size -gt 10000 ]]  
+    else
+        return 1
+    fi
+}
 # Полная проверка YouTube (с выводом)
 check_youtube_full() {
     echo "Проверяем YouTube (TLS 1.3):"
@@ -130,16 +156,27 @@ check_youtube_full() {
         echo "✗"
         return 1
     fi
+    echo -n " googlevideo.com (videoplayback)... "
+    if check_youtube_video; then
+        echo "✓"
+        return 0
+    else
+        echo "✗"
+        return 1
+    fi
 }
 
-# Тест стратегии, возвращает "yt_ok:cdn_ok"
+# Тест стратегии, возвращает "yt_ok:cdn_ok:video_ok"
 test_strategy() {
-    local yt_ok=0 cdn_ok=0
+    local yt_ok=0 cdn_ok=0 video_ok=0
     if check_youtube_main; then
         yt_ok=1
-        check_youtube_cdn && cdn_ok=1
+        if check_youtube_cdn; then
+            cdn_ok=1
+            check_youtube_video && video_ok=1
+        fi
     fi
-    echo "$yt_ok:$cdn_ok"
+    echo "$yt_ok:$cdn_ok:$video_ok"
 }
 
 # ═══════════════════════════════════════════════════════════
@@ -169,33 +206,43 @@ show_results() {
     fi
     
     local table="
-────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────────
 Рабочие стратегии:
-────────────────────────────────────────────────────────────────"
+────────────────────────────────────────────────────────────────────"
     echo "$table"
     echo "$table" >> "$RESULTS_FILE"
     
     printf "  %-4s %-40s %s\n" "№" "Стратегия" "Статус"
     printf "  %-4s %-40s %s\n" "№" "Стратегия" "Статус" >> "$RESULTS_FILE"
-    echo "────────────────────────────────────────────────────────────────"
-    echo "────────────────────────────────────────────────────────────────" >> "$RESULTS_FILE"
+    echo "────────────────────────────────────────────────────────────────────"
+    echo "────────────────────────────────────────────────────────────────────" >> "$RESULTS_FILE"
     
     for entry in "${WORKING_STRATEGIES[@]}"; do
+        #local num="${entry%%:*}"
+        #local rest="${entry#*:}"
+        #local name="${rest%%:*}"
+        #rest="${rest#*:}"
+        #local yt_ok="${rest%%:*}"
+        #local cdn_ok="${rest#*:}"
+        
         local num="${entry%%:*}"
         local rest="${entry#*:}"
         local name="${rest%%:*}"
         rest="${rest#*:}"
         local yt_ok="${rest%%:*}"
-        local cdn_ok="${rest#*:}"
-        
+        rest="${rest#*:}"
+        local cdn_ok="${rest%%:*}"
+        local video_ok="${rest#*:}"
+
         local cdn_status=$([[ $cdn_ok -gt 0 ]] && echo '✓' || echo '✗')
-        local line=$(printf "  [%-2s] %-40s YT:✓ CDN:%s" "$num" "$name" "$cdn_status")
+        local video_status=$([[ $video_ok -gt 0 ]] && echo '✓' || echo '✗')
+        local line=$(printf "  [%-2s] %-40s YT:✓ CDN:%s VIDEO:%s" "$num" "$name" "$cdn_status" "$video_status")
         echo "$line"
         echo "$line" >> "$RESULTS_FILE"
     done
     
-    echo "────────────────────────────────────────────────────────────────"
-    echo "────────────────────────────────────────────────────────────────" >> "$RESULTS_FILE"
+    echo "────────────────────────────────────────────────────────────────────"
+    echo "────────────────────────────────────────────────────────────────────" >> "$RESULTS_FILE"
     echo "Если стратегия не работает - попробуйте запустить stop_and_clean_nft.sh, а затем запустить стратегию снова" >> "$RESULTS_FILE"
 
     echo ""
@@ -246,7 +293,10 @@ if [[ $MAX_STRATEGY -eq 0 ]]; then
     echo "❌ Стратегии не найдены. Запустите: ./service.sh download-deps --default"
     exit 1
 fi
-
+if ! command -v yt-dlp &>/dev/null; then
+    echo "❌ yt-dlp не установлен."
+    exit 1
+fi
 # Проверка без zapret
 echo "Проверяем доступность YouTube без zapret..."
 if check_youtube_full; then
@@ -274,16 +324,21 @@ for ((i=1; i<=MAX_STRATEGY; i++)); do
     
     result=$(test_strategy)
     yt_ok="${result%%:*}"
-    cdn_ok="${result#*:}"
-    
+    temp="${result#*:}"
+    cdn_ok="${temp%%:*}"
+    video_ok="${temp#*:}"
     if [[ $yt_ok -gt 0 ]]; then
         if [[ $cdn_ok -gt 0 ]]; then
-            echo -e "${GREEN}YT:✓ CDN:✓${NC}"
+            if [[ $video_ok -gt 0 ]]; then
+                echo -e "${GREEN}YT:✓ CDN:✓ VIDEO:✓${NC}"
+            else
+                echo -e "${GREEN}YT:✓ CDN:✓${NC} ${RED}VIDEO:✗${NC}"
+            fi
         else
             echo -e "${GREEN}YT:✓${NC} ${RED}CDN:✗${NC}"
         fi
         ((SUCCESS_COUNT++))
-        WORKING_STRATEGIES+=("$i:$name:$yt_ok:$cdn_ok")
+        WORKING_STRATEGIES+=("$i:$name:$yt_ok:$cdn_ok:$video_ok")
     else
         echo -e "${RED}YT:✗${NC}"
         ((FAILED_COUNT++))
