@@ -2,7 +2,7 @@
 
 handle_add_domains() {
   clear
-  local file="$HOME_DIR_PATH/user-lists/list-exclude-user.txt"
+  local file="$HOME_DIR_PATH/user-lists/list-general-user.txt"
   if [ ! -e "$file" ]; then
     echo "Ошибка: Файл не найден!"
     echo "Запустите: ./service.sh download-deps --default"
