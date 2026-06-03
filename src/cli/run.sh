@@ -130,7 +130,7 @@ run_zapret_command() {
                 echo "Выбран интерфейс: $interface"
                 break
             fi
-            echo "Неверный выбор. Попробуйте еще раз."
+            show_error "Неверный выбор. Попробуйте еще раз."
         done
 
         #Gamefilter

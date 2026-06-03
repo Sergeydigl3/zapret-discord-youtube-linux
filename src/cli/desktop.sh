@@ -24,17 +24,15 @@ show_desktop_menu() {
     read -p "Выберите действие: " choice
     case $choice in
     1)
-        create_desktop_shortcut
+        create_desktop_shortcut || show_error "Не удалось создать ярлык"
         read -p "Нажмите Enter для продолжения..."
         ;;
     2)
-        remove_desktop_shortcut
-        read -p "Нажмите Enter для продолжения..."
+        remove_desktop_shortcut && read -p "Нажмите Enter для продолжения..."
         ;;
     0) return ;;
     *)
-        echo "Неверный выбор."
-        read -p "Нажмите Enter для продолжения..."
+        show_error "Неверный выбор"
         show_desktop_menu
         ;;
     esac

@@ -55,20 +55,18 @@ show_menu() {
     echo "=============================================================================="
     echo ""
     read -p "Выберите действие: " choice
-    case $choice in
-    1) run_zapret_command ;;
+     case $choice in
+    1) run_zapret_command || show_error "Не удалось запустить zapret" ;;
     2) show_service_menu ;;
-    3) create_conf_file ;;
+    3) create_conf_file || show_error "Не удалось создать конфигурацию"
+       read -p "Нажмите Enter для продолжения..." ;;
     4) show_dependencies_menu ;;
     5) show_desktop_menu ;;
-    6) setup_permissions ;;
-    7) change_mode_ipset "$(get_mode_ipset)" ;;
-    8) gamefilter_menu ;;
+    6) setup_permissions || show_error "Не удалось настроить разрешения" ;;
+    7) change_mode_ipset "$(get_mode_ipset)" || show_error "Не удалось сменить режим ipset" ;;
+    8) gamefilter_menu || show_error "Не удалось изменить gamefilter" ;;
     0) exit 0 ;;
-    *)
-        echo "Неверный выбор"
-        read -p "Нажмите Enter для продолжения..."
-        ;;
+    *) show_error "Неверный выбор" ;;
     esac
 }
 

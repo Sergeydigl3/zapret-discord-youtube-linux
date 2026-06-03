@@ -44,8 +44,7 @@ setup_sudoers() {
 
     # Проверяем директорию sudoers.d
     if [[ ! -d "/etc/sudoers.d" ]]; then
-        echo "Ошибка: /etc/sudoers.d не существует"
-        read -p "Нажмите Enter для продолжения..."
+        show_error "Ошибка: /etc/sudoers.d не существует"
         return 0
     fi
 
@@ -67,8 +66,7 @@ setup_sudoers() {
     fi
 
     echo "$content" | elevate tee "$SUDOERS_FILE" > /dev/null || {
-        echo "Ошибка записи $SUDOERS_FILE"
-        read -p "Нажмите Enter для продолжения..."
+        show_error "Ошибка записи $SUDOERS_FILE"
         return 0
     }
 
@@ -77,9 +75,8 @@ setup_sudoers() {
     # Проверяем синтаксис
     if command -v visudo >/dev/null 2>&1; then
         if ! elevate visudo -c -f "$SUDOERS_FILE" 2>/dev/null; then
-            echo "Ошибка синтаксиса! Удаляю файл..."
+            show_error "Ошибка синтаксиса! Удаляю файл..."
             elevate rm -f "$SUDOERS_FILE"
-            read -p "Нажмите Enter для продолжения..."
             return 0
         fi
     fi
@@ -152,8 +149,7 @@ setup_doas() {
         echo ""
         echo "$rules"
     } | elevate tee -a "$DOAS_CONF" > /dev/null || {
-        echo "Ошибка записи в $DOAS_CONF"
-        read -p "Нажмите Enter для продолжения..."
+        show_error "Ошибка записи в $DOAS_CONF"
         return 0
     }
 
@@ -170,8 +166,7 @@ setup_permissions() {
     local user="${1:-$USER}"
     local system
     system=$(get_elevate_cmd) || {
-        echo "Ошибка: не найден sudo или doas"
-        read -p "Нажмите Enter для продолжения..."
+        show_error "Ошибка: не найден sudo или doas"
         return 0
     }
 

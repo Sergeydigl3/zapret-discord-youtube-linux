@@ -97,8 +97,7 @@ gamefilter_menu() {
             ;;
 
         *)
-            echo "Неверный выбор!"
-            read -p "Нажмите Enter для продолжения..."
+            show_error "Неверный выбор"
             gamefilter_menu
             ;;
     esac

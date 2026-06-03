@@ -68,7 +68,8 @@ remove_desktop_shortcut() {
 
         echo "✓ Системный ярлык удалён: $desktop_file"
     else
-        echo "Ярлык не найден: $desktop_file"
+        show_error "Ярлык не найден: $desktop_file"
+        return 1
     fi
 }
 

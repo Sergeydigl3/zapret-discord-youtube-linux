@@ -42,6 +42,7 @@ show_service_menu() {
             case $choice in
             1) ensure_config_exists && install_service ; read -p "Нажмите Enter для продолжения..." ;;
             0) break ;;
+            *) show_error "Неверный выбор" ;;
             esac
             ;;
         2)
@@ -55,6 +56,7 @@ show_service_menu() {
             2) restart_service ; read -p "Нажмите Enter для продолжения..." ;;
             3) remove_service ; read -p "Нажмите Enter для продолжения..." ;;
             0) break ;;
+            *) show_error "Неверный выбор" ;;
             esac
             ;;
         3)
@@ -66,6 +68,7 @@ show_service_menu() {
             1) start_service ; read -p "Нажмите Enter для продолжения..." ;;
             2) remove_service ; read -p "Нажмите Enter для продолжения..." ;;
             0) break ;;
+            *) show_error "Неверный выбор" ;;
             esac
             ;;
         esac

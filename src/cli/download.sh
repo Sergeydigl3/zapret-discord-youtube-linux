@@ -34,11 +34,11 @@ show_dependencies_menu() {
     read -p "Выберите действие: " choice
     case $choice in
     1)
-        handle_download_deps_command
+        handle_download_deps_command || show_error "Не удалось загрузить зависимости"
         read -p "Нажмите Enter для продолжения..."
         ;;
     2)
-        handle_download_deps_command --default
+        handle_download_deps_command --default || show_error "Не удалось загрузить зависимости"
         read -p "Нажмите Enter для продолжения..."
         ;;
     3)
@@ -48,8 +48,7 @@ show_dependencies_menu() {
         ;;
     0) return ;;
     *)
-        echo "Неверный выбор."
-        read -p "Нажмите Enter для продолжения..."
+        show_error "Неверный выбор"
         show_dependencies_menu
         ;;
     esac

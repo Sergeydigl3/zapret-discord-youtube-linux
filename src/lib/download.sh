@@ -136,8 +136,7 @@ download_nfqws() {
 
     # Проверяем что файл создан
     if [[ ! -f "$out_dir/nfqws" ]]; then
-        echo "Бинарник nfqws не был создан"
-        read -p "Нажмите Enter для продолжения..."
+        show_error "Бинарник nfqws не был создан"
         return 0
     fi
 
@@ -188,8 +187,7 @@ select_zapret_version_interactive() {
         3)
             read -p "Введите версию (тег): " selected_zapret_version
             if [[ -z "$selected_zapret_version" ]]; then
-                echo "Версия не может быть пустой!"
-                read -p "Нажмите Enter для продолжения..."
+                show_error "Версия не может быть пустой!"
                 select_zapret_version_interactive
             fi
             ;;
@@ -199,8 +197,7 @@ select_zapret_version_interactive() {
             tags=$(get_git_tags "https://github.com/${ZAPRET_REPO}")
 
             if [[ -z "$tags" ]]; then
-                echo "Теги не найдены в репозитории"
-                read -p "Нажмите Enter для продолжения..."
+                show_error "Теги не найдены в репозитории"
                 return 0
             fi
 
@@ -211,8 +208,7 @@ select_zapret_version_interactive() {
             done <<< "$tags"
 
             if [[ ${#tag_array[@]} -eq 0 ]]; then
-                echo "Теги не найдены в репозитории"
-                read -p "Нажмите Enter для продолжения..."
+                show_error "Теги не найдены в репозитории"
                 return 0
             fi
 
@@ -238,16 +234,15 @@ select_zapret_version_interactive() {
                     echo "Выбрана версия: $selected_zapret_version"
                     break
                 fi
-                echo "Неверный выбор. Попробуйте еще раз."
+                show_error "Неверный выбор. Попробуйте еще раз."
             done
             ;;
         5)
             echo -e "Пропуск загрузки nfqws\n"
             return 0
             ;;
-        *)  
-            echo "Такого варианта нет"
-            read -p "Нажмите Enter для продолжения..."
+        *)
+            show_error "Такого варианта нет"
             select_zapret_version_interactive
             ;;
     esac
@@ -273,8 +268,7 @@ select_strategy_version_interactive() {
         2)
             read -p "Введите хеш коммита или тег: " selected_strat_version
             if [[ -z "$selected_strat_version" ]]; then
-                echo "Версия не может быть пустой!"
-                read -p "Нажмите Enter для продолжения..."
+                show_error "Версия не может быть пустой!"
                 select_strategy_version_interactive
             fi
             ;;
@@ -285,8 +279,7 @@ select_strategy_version_interactive() {
             tags=$(get_git_tags "$REPO_URL")
 
             if [[ -z "$tags" ]]; then
-                echo "Теги не найдены в репозитории"
-                read -p "Нажмите Enter для продолжения..."
+                show_error "Теги не найдены в репозитории"
                 select_strategy_version_interactive
             fi
 
@@ -297,8 +290,7 @@ select_strategy_version_interactive() {
             done <<< "$tags"
 
             if [[ ${#tag_array[@]} -eq 0 ]]; then
-                echo "Теги не найдены в репозитории"
-                read -p "Нажмите Enter для продолжения..."
+                show_error "Теги не найдены в репозитории"
                 select_strategy_version_interactive
             fi
 
@@ -310,12 +302,11 @@ select_strategy_version_interactive() {
                     echo "Выбран тег: $tag"
                     break
                 fi
-                echo "Неверный выбор. Попробуйте еще раз."
+                show_error "Неверный выбор. Попробуйте еще раз."
             done
             ;;
         *)
-            echo "Такого варианта нет"
-            read -p "Нажмите Enter для продолжения..."
+            show_error "Такого варианта нет"
             select_strategy_version_interactive
             ;;
     esac

@@ -21,8 +21,7 @@ create_conf_file() {
     # 1. Выбор интерфейса
     local interfaces=("any" $(ls /sys/class/net))
     if [ ${#interfaces[@]} -eq 0 ]; then
-        echo "Не найдены сетевые интерфейсы"
-        read -p "Нажмите Enter для продолжения..."
+        show_error "Не найдены сетевые интерфейсы"
         return 0
     fi
     echo "Доступные сетевые интерфейсы:"
@@ -31,7 +30,7 @@ create_conf_file() {
             echo "Выбран интерфейс: $chosen_interface"
             break
         fi
-        echo "Неверный выбор. Попробуйте еще раз."
+        show_error "Неверный выбор. Попробуйте еще раз."
     done
 
     # 2. GamefilterTCP
@@ -94,8 +93,6 @@ EOF
 
     echo "Текущяя конфигурация:"
     cat "$CONF_FILE"
-
-    read -p "Нажмите Enter для продолжения..."
 }
 
 # Функция для вывода текущей конфигурации
