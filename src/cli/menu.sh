@@ -33,50 +33,66 @@ show_usage() {
 }
 
 # Основное меню управления
+MENU_LOOP=0
 show_menu() {
   clear
-  echo "░▒▓████████▓▒░░▒▓██████▓▒░░▒▓███████▓▒░░▒▓███████▓▒░░▒▓████████▓▒░▒▓████████▓▒░ "
-  echo "       ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░         ░▒▓█▓▒░     "
-  echo "     ░▒▓██▓▒░░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░         ░▒▓█▓▒░     "
-  echo "   ░▒▓██▓▒░  ░▒▓████████▓▒░▒▓███████▓▒░░▒▓███████▓▒░░▒▓██████▓▒░    ░▒▓█▓▒░     "
-  echo " ░▒▓██▓▒░    ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░         ░▒▓█▓▒░     "
-  echo "░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░         ░▒▓█▓▒░     "
-  echo "░▒▓████████▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓████████▓▒░  ░▒▓█▓▒░     "
-  echo ""
+  big_zapret_art
+  # zapret_cli_art # вроде выглядит даже по лучше
+
+  # Строки COMMANDS
+  # Статусы ipset и т.д
+  local ipset_status=$(get_mode_ipset 2>/dev/null)
+  local game_status=$(get_gamefilter_status 2>/dev/null)
+  
+  local ipset_line="Сменить режим ipset [Текущий - $ipset_status]"
+  local game_line="Сменить режим gamefilter [Текущий - $game_status]"
+  local first_line="Запустить (без установки сервиса)"
+  local current_focus=""
+  
   COMMANDS=(
-    "Запустить (без установки сервиса)"
+    "$first_line"
     "Управление сервисом"
     "Изменить конфигурацию"
     "Управление зависимостями"
     "Управление ярлыком на рабочем столе"
     "Настроить работу без пароля"
-    "Сменить режим ipset [Текущий - $(get_mode_ipset)]"
-    "Сменить режим gamefilter [Текущий - $(get_gamefilter_status)]"
+    "$ipset_line"
+    "$game_line"
     "Добавить домены в zapret"
     "Выход"
   )
-  choice=$(gum choose "${COMMANDS[@]}" --header="~ ZAPRET CLI ~ ")
+  
+  # Считаем перезапуски меню
+  if [ "$MENU_LOOP" -eq 0 ]; then
+    MENU_LOOP=1
+    current_focus="$first_line"
+  else
+    current_focus="$ipset_line"
+  fi
 
-  case $choice in
-  "Запустить"*) run_zapret_command ;;
-  "Управление сервисом"*) show_service_menu ;;
-  "Изменить"*) create_conf_file ;;
-  "Управление зависимостями"*) show_dependencies_menu ;;
-  "Управление ярлыком"*) show_desktop_menu ;;
-  "Настроить"*) setup_permissions ;;
-  "Сменить режим ipset"*) change_mode_ipset "$(get_mode_ipset)" ;;
-  "Сменить режим gamefilter"*) gamefilter_menu ;;
-  "Добавить"*) handle_add_domains ;;
-  "Выход"*) exit 0 ;;
+  # Выбор
+  choice=$(gum choose --selected="$current_focus" "${COMMANDS[@]}" --header="~ Zapret CLI ~")
+
+  [ -z "$choice" ] && exit 0
+  case "$choice" in
+    "Запустить"*)                  run_zapret_command; return 1 ;;
+    "Управление сервисом"*)        show_service_menu; return 1 ;;
+    "Изменить"*)                   create_conf_file; return 1 ;;
+    "Управление зависимостями"*)   show_dependencies_menu; return 1 ;;
+    "Управление ярлыком"*)         show_desktop_menu; return 1 ;;
+    "Настроить"*)                  setup_permissions; return 1 ;;
+    "Сменить режим ipset"*)        change_mode_ipset "$(get_mode_ipset)"; return 0 ;;
+    "Сменить режим gamefilter"*)   gamefilter_menu; return 0 ;;
+    "Добавить"*)                   handle_add_domains; return 1 ;;
+    "Выход"*)                      clear ; zapret_cli_art ; exit 0 ;; # Выходим, выводим ascii art
 
   # Для тех кто будет что то дописывать проверьте не сливается ли ваша функция с другими
   # "Запустить"*) ... ;; -> "Запустить"*) ... ;;
   # "Запустить"*) ... ;; -> "Запустить {следующее слово т.к проверка идет по словам}"*) ... ;;
-
-  *)
-    # Будет странно если оно хоть раз случится
-    read -p "Действие не найдено!"
-    ;;
+  # Отдельно для не найденого действия ( я не думаю что оно хоть раз произойдет )
+    *)
+      read -p "Действие не найдено!"
+      return 1 ;;
   esac
 }
 
@@ -84,7 +100,9 @@ show_menu() {
 run_interactive() {
   while true; do
     show_menu
+    res=$?
+    if [ "$res" -eq 1 ]; then
+      break
+    fi
   done
-  echo ""
-  read -p "Нажмите Enter для выхода..."
 }

@@ -20,6 +20,7 @@ source "$HOME_DIR_PATH/src/lib/permissions.sh"
 source "$HOME_DIR_PATH/src/lib/ipswitch.sh"
 
 # Подключаем CLI модули
+source "$HOME_DIR_PATH/src/cli/ascii-arts.sh"
 source "$HOME_DIR_PATH/src/cli/menu.sh"
 source "$HOME_DIR_PATH/src/cli/service.sh"
 source "$HOME_DIR_PATH/src/cli/config.sh"
