@@ -82,7 +82,7 @@ show_menu() {
     "Управление ярлыком"*)         show_desktop_menu; return 1 ;;
     "Настроить"*)                  setup_permissions; return 1 ;;
     "Сменить режим ipset"*)        change_mode_ipset "$(get_mode_ipset)"; return 0 ;;
-    "Сменить режим gamefilter"*)   gamefilter_menu; return 0 ;;
+    "Сменить режим gamefilter"*)   gamefilter_menu; return 1 ;;
     "Добавить"*)                   handle_add_domains; return 1 ;;
     "Выход"*)                      clear ; zapret_cli_art ; exit 0 ;; # Выходим, выводим ascii art
 
