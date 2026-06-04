@@ -14,7 +14,7 @@ show_run_usage() {
     echo "    -c, --config FILE           Load configuration from file"
     echo "    -s, --strategy NAME         Use specific strategy"
     echo "    -i, --interface NAME        Network interface (default: any)"
-    echo "    -fb, --firewall-backend F   Firewall backend: auto, nftables, iptables"
+    echo "    -fb, --firewall-backend F   Firewall backend: auto, nftables, iptables, ..."
     echo "    -gt, --gamefiltertcp        Enable gamefiltertcp"
     echo "    -gu, --gamefilterudp        Enable gamefilterudp"
     echo "    -h, --help                  Show this help"
@@ -147,15 +147,20 @@ run_zapret_command() {
         # Выбор бэкенда файрвола
         echo ""
         echo "Выберите бэкенд файрвола:"
-        echo "1) auto (автоопределение: nftables > iptables)"
-        echo "2) nftables"
-        echo "3) iptables"
+        local backends=()
+        local i=1
+        echo "$i) auto (автоопределение)"
+        ((i++))
+        while IFS= read -r backend; do
+            backends+=("$backend")
+            echo "$i) $backend"
+            ((i++))
+        done < <(list_available_backends)
         read -p "Ваш выбор [1]: " fw_choice
         FIREWALL_BACKEND="auto"
-        case "$fw_choice" in
-            2) FIREWALL_BACKEND="nftables" ;;
-            3) FIREWALL_BACKEND="iptables" ;;
-        esac
+        if [[ "$fw_choice" -gt 1 && "$fw_choice" -le "${#backends[@]}" ]]; then
+            FIREWALL_BACKEND="${backends[$((fw_choice - 2))]}"
+        fi
 
         # Выбор стратегии
         select_strategy_interactive
@@ -180,7 +185,6 @@ run_daemon() {
 
 # Остановка zapret (nfqws + firewall rules)
 stop_zapret() {
-    source "$BASE_DIR/src/lib/firewall.sh"
     log "Остановка nfqws..."
     stop_nfqws
     log "Очистка правил файрвола..."

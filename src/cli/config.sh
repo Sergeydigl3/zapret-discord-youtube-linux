@@ -56,15 +56,20 @@ create_conf_file() {
     # 5. Выбор бэкенда файрвола
     echo ""
     echo "Выберите бэкенд файрвола:"
-    echo "1) auto (автоопределение: nftables > iptables)"
-    echo "2) nftables"
-    echo "3) iptables"
+    local backends=()
+    local i=1
+    echo "$i) auto (автоопределение)"
+    ((i++))
+    while IFS= read -r backend; do
+        backends+=("$backend")
+        echo "$i) $backend"
+        ((i++))
+    done < <(list_available_backends)
     read -p "Ваш выбор [1]: " fw_choice
     local fw_backend="auto"
-    case "$fw_choice" in
-        2) fw_backend="nftables" ;;
-        3) fw_backend="iptables" ;;
-    esac
+    if [[ "$fw_choice" -gt 1 && "$fw_choice" -le "${#backends[@]}" ]]; then
+        fw_backend="${backends[$((fw_choice - 2))]}"
+    fi
 
     # Записываем полученные значения в conf.env
     cat <<EOF >"$CONF_FILE"
@@ -91,7 +96,7 @@ EOF
         echo "Конфигурация записана в $CONF_FILE."
     fi
 
-    echo "Текущяя конфигурация:"
+    echo "Текущая конфигурация:"
     cat "$CONF_FILE"
 }
 

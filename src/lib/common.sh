@@ -418,7 +418,6 @@ start_nfqws() {
 # Требует: REPO_DIR, NFQWS_PATH, STOP_SCRIPT
 run_zapret() {
     # Остановка предыдущего экземпляра
-    source "$BASE_DIR/src/lib/firewall.sh"
     stop_nfqws
     firewall_clear
     sleep 1
