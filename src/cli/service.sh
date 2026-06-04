@@ -36,7 +36,7 @@ show_service_menu() {
     read -p "Выберите действие: " choice
     case $choice in
     1) ensure_config_exists && install_service ;;
-    0) return ;;
+    0) : ;;
     esac
     ;;
   2)
@@ -49,7 +49,7 @@ show_service_menu() {
     1) stop_service ;;
     2) restart_service ;;
     3) remove_service ;;
-    0) return ;;
+    0) : ;;
     esac
     ;;
   3)
@@ -60,10 +60,11 @@ show_service_menu() {
     case $choice in
     1) start_service ;;
     2) remove_service ;;
-    0) return ;;
+    0) : ;;
     esac
     ;;
   esac
+  run_interactive
 }
 
 # Обработчик команды service

@@ -56,7 +56,8 @@ setup_sudoers() {
     read -p "Создать? [Y/n]: " confirm
     if [[ "${confirm:-Y}" =~ ^[Nn]$ ]]; then
         echo "Отменено"
-        return 1
+        sleep 0.7
+        run_interactive
     fi
 
     echo "$content" | elevate tee "$SUDOERS_FILE" > /dev/null || {
@@ -114,7 +115,8 @@ setup_doas() {
     read -p "Добавить? [Y/n]: " confirm
     if [[ "${confirm:-Y}" =~ ^[Nn]$ ]]; then
         echo "Отменено"
-        return 1
+        sleep 0.7
+        run_interactive
     fi
 
     # Проверяем, есть ли уже наши правила
@@ -165,6 +167,7 @@ setup_permissions() {
             setup_doas "$user"
             ;;
     esac
+    run_interactive
 }
 
 remove_permissions() {

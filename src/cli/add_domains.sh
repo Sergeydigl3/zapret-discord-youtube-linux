@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# ==================================
+# CLI: Добавление доменов
+# ==================================
+
 handle_add_domains() {
   clear
   local file="$HOME_DIR_PATH/user-lists/list-general-user.txt"
@@ -32,5 +36,5 @@ handle_add_domains() {
   echo "Запуск сервисного меню"
   echo ""
   echo "Сервисное меню:"
-  show_service_menu
+  run_interactive
 }
