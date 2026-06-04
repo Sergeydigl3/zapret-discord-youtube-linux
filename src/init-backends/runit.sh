@@ -90,12 +90,12 @@ restart_service() {
 
 # Функция удаления сервиса
 remove_service() {
-    echo "Остановка и удаление сервиса"
+    echo "Остановка и удаление сервиса..."
 
     elevate sv down "$SERVICE_NAME" 2>/dev/null || true
     sleep 1
     elevate rm -rf "$SERVICE_DIR"
     elevate rm -f "$SCAN_DIR/$SERVICE_NAME"
 
-    echo "Сервис полностью удален."
+    echo "Сервис полностью удалён."
 }
