@@ -75,8 +75,10 @@ EOF
     else
         echo "Конфигурация записана в $CONF_FILE."
     fi
+    run_interactive
 }
 
+# TODO: Сделать вывод конфигурации в menu.sh
 # Функция для вывода текущей конфигурации
 show_config() {
     if [ -f "$CONF_FILE" ]; then
@@ -127,6 +129,7 @@ ENV
     if [ "$RESTART_SERVICE" = true ]; then
         restart_service
     fi
+    run_interactive
 }
 
 # Справка для config

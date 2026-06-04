@@ -35,7 +35,8 @@ gamefilter_menu() {
     echo "UDP: $UDP_STATUS ($GAME_FILTER_UDP_PORTS)"
 
     echo ""
-
+    
+    # TODO: Написать выборку через gum 
     # Общий статус
     if [ "$TCP_STATUS" = "ВКЛЮЧЕН" ] && [ "$UDP_STATUS" = "ВКЛЮЧЕН" ]; then
         echo "Общий статус: GameFilter включён для TCP + UDP"
@@ -54,7 +55,7 @@ gamefilter_menu() {
     echo "2) Только UDP"
     echo "3) TCP + UDP"
     echo "4) Выключить всё"
-    echo "0) Отмена"
+    echo "0) Назад"
 
     read -p "Введите номер: " choice
 
@@ -88,15 +89,18 @@ gamefilter_menu() {
             ;;
 
         0)
-            echo "Отмена"
-            return 0
+            # Назад в интерактивное меню 
+            :
             ;;
 
         *)
             echo "Неверный выбор!"
-            return 1
+            echo "Введите ещё раз!"
+            sleep 1.5
+            gamefilter_menu
             ;;
     esac
+    run_interactive
 }
 
 get_gamefilter_status() {

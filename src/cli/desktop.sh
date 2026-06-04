@@ -30,11 +30,12 @@ show_desktop_menu() {
         remove_desktop_shortcut
         read -p "Нажмите Enter для продолжения..."
         ;;
-    0) return ;;
+    0) : ;;
     *)
         echo "Неверный выбор."
         ;;
     esac
+    run_interactive
 }
 
 # Обработчик команды desktop

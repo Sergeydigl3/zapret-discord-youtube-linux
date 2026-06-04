@@ -20,6 +20,7 @@ source "$HOME_DIR_PATH/src/lib/permissions.sh"
 source "$HOME_DIR_PATH/src/lib/ipswitch.sh"
 
 # Подключаем CLI модули
+source "$HOME_DIR_PATH/src/cli/ascii-arts.sh"
 source "$HOME_DIR_PATH/src/cli/menu.sh"
 source "$HOME_DIR_PATH/src/cli/service.sh"
 source "$HOME_DIR_PATH/src/cli/config.sh"
@@ -29,54 +30,55 @@ source "$HOME_DIR_PATH/src/cli/desktop.sh"
 source "$HOME_DIR_PATH/src/cli/run.sh"
 source "$HOME_DIR_PATH/src/cli/permissions.sh"
 source "$HOME_DIR_PATH/src/cli/gamefilter.sh"
+source "$HOME_DIR_PATH/src/cli/add_domains.sh"
 
 check_dependencies
 
 # Главный парсер команд
 case "${1:-}" in
-    service)
-        shift
-        handle_service_command "$@"
-        ;;
-    config)
-        shift
-        handle_config_command "$@"
-        ;;
-    strategy)
-        shift
-        handle_strategy_command "$@"
-        ;;
-    download-deps)
-        shift
-        handle_download_deps_command "$@"
-        ;;
-    desktop)
-        shift
-        handle_desktop_command "$@"
-        ;;
-    run)
-        shift
-        run_zapret_command "$@"
-        ;;
-    daemon)
-        run_daemon
-        ;;
-    kill)
-        stop_zapret
-        ;;
-    setup-permissions)
-        shift
-        handle_permissions_command "$@"
-        ;;
-    -h|--help|help)
-        show_usage
-        ;;
-    "")
-        run_interactive
-        ;;
-    *)
-        echo "Unknown command: $1"
-        echo "Run '$(basename "$0") --help' for usage information."
-        exit 1
-        ;;
+service)
+  shift
+  handle_service_command "$@"
+  ;;
+config)
+  shift
+  handle_config_command "$@"
+  ;;
+strategy)
+  shift
+  handle_strategy_command "$@"
+  ;;
+download-deps)
+  shift
+  handle_download_deps_command "$@"
+  ;;
+desktop)
+  shift
+  handle_desktop_command "$@"
+  ;;
+run)
+  shift
+  run_zapret_command "$@"
+  ;;
+daemon)
+  run_daemon
+  ;;
+kill)
+  stop_zapret
+  ;;
+setup-permissions)
+  shift
+  handle_permissions_command "$@"
+  ;;
+-h | --help | help)
+  show_usage
+  ;;
+"")
+  run_interactive
+  ;;
+*)
+  echo "Unknown command: $1"
+  echo "Run '$(basename "$0") --help' for usage information."
+  exit 1
+  ;;
 esac

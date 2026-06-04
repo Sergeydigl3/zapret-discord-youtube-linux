@@ -42,11 +42,12 @@ show_dependencies_menu() {
         show_strategies
         read -p "Нажмите Enter для продолжения..."
         ;;
-    0) return ;;
+    0) : ;;
     *)
         echo "Неверный выбор."
         ;;
     esac
+    run_interactive
 }
 
 # Обработчик команды download-deps
