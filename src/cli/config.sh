@@ -67,7 +67,7 @@ create_conf_file() {
     done < <(list_available_backends)
     read -p "Ваш выбор [1]: " fw_choice
     local fw_backend="auto"
-    if [[ "$fw_choice" -gt 1 && "$fw_choice" -le "${#backends[@]}" ]]; then
+    if [[ "$fw_choice" -gt 1 && "$fw_choice" -lt "$i" ]]; then
         fw_backend="${backends[$((fw_choice - 2))]}"
     fi
 

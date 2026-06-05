@@ -158,7 +158,7 @@ run_zapret_command() {
         done < <(list_available_backends)
         read -p "Ваш выбор [1]: " fw_choice
         FIREWALL_BACKEND="auto"
-        if [[ "$fw_choice" -gt 1 && "$fw_choice" -le "${#backends[@]}" ]]; then
+        if [[ "$fw_choice" -gt 1 && "$fw_choice" -lt "$i" ]]; then
             FIREWALL_BACKEND="${backends[$((fw_choice - 2))]}"
         fi
 
