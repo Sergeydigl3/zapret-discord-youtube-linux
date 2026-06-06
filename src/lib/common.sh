@@ -211,7 +211,7 @@ ensure_config_exists() {
         # Перепроверяем конфигурацию
         if ! check_conf_file; then
             show_error "Файл конфигурации всё ещё некорректен. Операция отменена."
-            return 0
+            return 1
         fi
     fi
     return 0

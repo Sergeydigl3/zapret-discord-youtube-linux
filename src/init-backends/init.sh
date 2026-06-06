@@ -28,6 +28,12 @@ detect_init_system() {
 
     exe_name=$(basename "$exe" 2>/dev/null)
 
+    # NIXOS — сначала проверяем, т.к. NixOS использует systemd, но /etc неизменяема
+    if [[ -f "/etc/os-release" ]] && grep -qi "^ID=nixos" /etc/os-release 2>/dev/null; then
+        echo "nixos"
+        return
+    fi
+
     # SYSTEMD
     if [[ "$exe_name" == "systemd" ]] || [[ -d "/run/systemd/system" ]]; then
         echo "systemd"
