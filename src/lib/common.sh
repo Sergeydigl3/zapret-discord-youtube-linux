@@ -324,8 +324,17 @@ parse_bat_file() {
     if [ "$USE_GAME_FILTER" = true ]; then
         content="${content//%GameFilter%/$GAME_FILTER_PORTS}"
         #TCP and UDP
-        content="${content//%GameFilterTCP%/$GAME_FILTER_TCP_PORTS}"
-        content="${content//%GameFilterUDP%/$GAME_FILTER_UDP_PORTS}"
+        if [ "$USE_GAME_FILTER_TCP" = true ]; then
+            content="${content//%GameFilterTCP%/$GAME_FILTER_PORTS}"
+        else
+            content="${content//%GameFilterTCP%/$GAME_FILTER_OFF_PORTS}"
+        fi
+
+        if [ "$USE_GAME_FILTER_UDP" = true ]; then
+            content="${content//%GameFilterUDP%/$GAME_FILTER_PORTS}"
+        else
+            content="${content//%GameFilterUDP%/$GAME_FILTER_OFF_PORTS}"
+        fi
     else
         content="${content//,%GameFilter%/}"
         content="${content//%GameFilter%,/}"
@@ -425,18 +434,26 @@ run_zapret() {
     # Установка USE_GAME_FILTER
     if [ "$gamefiltertcp" == "true" -a "$gamefilterudp" == "true" ]; then
         USE_GAME_FILTER=true
+        USE_GAME_FILTER_TCP=true
+        USE_GAME_FILTER_UDP=true
         log "GameFilterTCP и GameFilterUDP включен"
 
     elif [ "$gamefiltertcp" == "true" ]; then
         USE_GAME_FILTER=true
+        USE_GAME_FILTER_TCP=true
+        USE_GAME_FILTER_UDP=false
         log "GameFilterTCP включен"
 
     elif [ "$gamefilterudp" == "true" ]; then
         USE_GAME_FILTER=true
+        USE_GAME_FILTER_TCP=false
+        USE_GAME_FILTER_UDP=true
         log "GameFilterUDP включен"
 
     else
         USE_GAME_FILTER=false
+        USE_GAME_FILTER_TCP=false
+        USE_GAME_FILTER_UDP=false
         log "GameFilter выключен"
     fi
 
