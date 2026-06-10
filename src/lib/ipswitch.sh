@@ -34,10 +34,7 @@ change_mode_ipset(){
 }
 
 switch_to_none(){
-    if [ -f "$bipset" ]; then
-        rm -rf "$bipset"
-    fi
-    cp "$ipset" "$bipset"
+    cat "$ipset" > "$bipset"
     echo "203.0.113.113/32" > "$ipset"
     echo "Выбранный режим - $(get_mode_ipset)"
     read -p "Нажмите Enter для продолжения..."
@@ -45,24 +42,16 @@ switch_to_none(){
 }
 
 switch_to_any(){
-    rm -rf "$ipset"
-    touch "$ipset"
+    echo "" > "$ipset"
     echo "Выбранный режим - $(get_mode_ipset)"
     read -p "Нажмите Enter для продолжения..."
     return 0
 }
 
 switch_to_loaded(){
-    if [ -f "$bipset" ]; then
-        rm -rf "$ipset"
-        cp "$bipset" "$ipset"
-        echo "Выбранный режим - $(get_mode_ipset)"
-        read -p "Нажмите Enter для продолжения..."
-        return 0
-    fi
-    echo "Не найден бекап, переустановите zapret стратегии."
+    echo "$bipset" > "$ipset"
+    echo "Выбранный режим - $(get_mode_ipset)"
     read -p "Нажмите Enter для продолжения..."
-    return 0
 }
 
 

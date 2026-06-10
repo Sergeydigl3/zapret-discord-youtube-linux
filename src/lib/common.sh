@@ -144,11 +144,6 @@ setup_repository() {
             fi
         fi
 
-        if [[ -d "$REPO_DIR/lists" && -d "$user_lists_dir" ]]; then
-            log "Копирование lists"
-            rm -f "$user_lists_dir"/*
-            cp "$REPO_DIR/lists"/* "$user_lists_dir/"  
-        fi
         log "Удаление существующего репозитория..."
         rm -rf "$REPO_DIR"
     fi
@@ -193,6 +188,11 @@ setup_repository() {
         # Создаём хардлинки (не симлинки!) чтобы обойти проблемы с доступом к /home/user
         for file in "$user_lists_dir"/*; do
             ln -f "$file" "$REPO_DIR/lists/" 2>/dev/null || true
+        done
+
+        # Создаём хардлинки из user-lists
+        for file in "$REPO_DIR"/lists/*; do
+            ln -f "$file" "$user_lists_dir"/ 2>/dev/null || true
         done
     fi
 }
