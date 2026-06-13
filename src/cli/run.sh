@@ -134,16 +134,22 @@ run_zapret_command() {
         done
 
         #Gamefilter
-        gamefilter_status=$(get_gamefilter_status)
-        if [[ "$gamefilter_status" == "TCP" ]]; then
+        echo ""
+        read -p "GameFilterTCP [y/N]:" gamefiltertcp_choice
+        if [[ ! "${gamefiltertcp_choice:-N}" =~ ^[Yy]$ ]]; then
+            gamefiltertcp="false"
+        else
             gamefiltertcp="true"
-        elif [[ "$gamefilter_status" == "UDP" ]]; then
-            gamefilterudp="true"
-        elif [[ "$gamefilter_status" == "TCP + UDP" ]]; then
-            gamefiltertcp="true"
+        fi
+        
+        echo ""
+        read -p "GameFilterUDP [y/N]:" gamefilterudp_choice
+        if [[ ! "${gamefilterudp_choice:-N}" =~ ^[Yy]$ ]]; then
+            gamefilterudp="false"
+        else
             gamefilterudp="true"
         fi
-
+       
         # Выбор бэкенда файрвола
         echo ""
         echo "Выберите бэкенд файрвола:"

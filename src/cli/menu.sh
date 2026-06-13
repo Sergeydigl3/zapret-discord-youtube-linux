@@ -50,7 +50,6 @@ show_menu() {
     echo "5) Управление ярлыком на рабочем столе"
     echo "6) Настроить работу без пароля"
     echo "7) Сменить режим ipset [Текущий - $(get_mode_ipset)]"
-    echo "8) Сменить режим gamefilter [Текущий - $(get_gamefilter_status)]"
     echo "0) Выход"
     echo "=============================================================================="
     echo ""
@@ -64,7 +63,6 @@ show_menu() {
     5) show_desktop_menu ;;
     6) setup_permissions || show_error "Не удалось настроить разрешения" ;;
     7) change_mode_ipset "$(get_mode_ipset)" || show_error "Не удалось сменить режим ipset" ;;
-    8) gamefilter_menu || show_error "Не удалось изменить gamefilter" ;;
     0) exit 0 ;;
     *) show_error "Неверный выбор" ;;
     esac
