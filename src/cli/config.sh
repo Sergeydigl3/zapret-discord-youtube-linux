@@ -83,6 +83,10 @@ EOF
     if [[ "$is_editing" == true ]]; then
         echo "Конфигурация обновлена."
 
+        if ! declare -F check_service_status &>/dev/null; then
+            _load_init_backend 2>/dev/null || true
+        fi
+
         # Если сервис активен, предлагаем перезапустить
         local svc_status=0
         check_service_status >/dev/null 2>&1 || svc_status=$?

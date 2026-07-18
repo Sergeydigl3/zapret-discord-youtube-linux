@@ -40,9 +40,70 @@ EOF
 setup_sudoers() {
     local user="${1:-$USER}"
 
+    if [[ -f /etc/os-release ]] && grep -qi "^ID=nixos" /etc/os-release 2>/dev/null; then
+        local sudo_module="/etc/nixos/zapret-sudo.nix"
+        local config_path="/etc/nixos/configuration.nix"
+
+        read -p "Создать NixOS модуль sudo-правил и выполнить nixos-rebuild switch? (y/N): " confirm
+        if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+            echo "Отменено."
+            read -p "Нажмите Enter для продолжения..."
+            return 0
+        fi
+
+        elevate tee "$sudo_module" > /dev/null <<NIXEOF
+{ config, pkgs, ... }:
+
+{
+  security.sudo.extraRules = [
+    { users = [ "$user" ]; commands = [
+      { command = "\${pkgs.nftables}/bin/nft *"; options = [ "NOPASSWD" ]; }
+      { command = "\${pkgs.iptables}/bin/iptables *"; options = [ "NOPASSWD" ]; }
+      { command = "\${pkgs.iptables}/bin/ip6tables *"; options = [ "NOPASSWD" ]; }
+      { command = "$NFQWS_PATH *"; options = [ "NOPASSWD" ]; }
+      { command = "\${pkgs.procps}/bin/pkill -f nfqws"; options = [ "NOPASSWD" ]; }
+    ]; }
+  ];
+}
+NIXEOF
+
+        if ! grep -q "zapret-sudo.nix" "$config_path" 2>/dev/null; then
+            local tmp
+            tmp="$(mktemp)"
+            elevate awk -v import="  ./zapret-sudo.nix" '
+            /imports[[:space:]]*=[[:space:]]*\[/ {
+                if ($0 ~ /];/) {
+                    sub(/];/, sprintf("  %s\n  ];", import));
+                    print
+                } else {
+                    print
+                    in_imports = 1
+                }
+                next
+            }
+            in_imports && /];/ {
+                printf "    %s\n%s\n", import, $0
+                in_imports = 0
+                next
+            }
+            { print }
+            ' "$config_path" > "$tmp" 2>/dev/null
+
+            if [[ -s "$tmp" ]] && ! diff -q "$config_path" "$tmp" >/dev/null 2>&1; then
+                elevate cp "$tmp" "$config_path"
+            fi
+            rm -f "$tmp"
+        fi
+
+        local nix_path="${NIX_PATH:-nixpkgs=/nix/var/nix/profiles/per-user/root/channels/nixpkgs:nixos=/nix/var/nix/profiles/per-user/root/channels/nixos}"
+        elevate env "NIX_PATH=$nix_path" nixos-rebuild switch || true
+        echo "Готово."
+        read -p "Нажмите Enter для продолжения..."
+        return 0
+    fi
+
     echo "Настройка sudoers для $user..."
 
-    # Проверяем директорию sudoers.d
     if [[ ! -d "/etc/sudoers.d" ]]; then
         show_error "Ошибка: /etc/sudoers.d не существует"
         return 0
@@ -72,7 +133,6 @@ setup_sudoers() {
 
     elevate chmod 440 "$SUDOERS_FILE"
 
-    # Проверяем синтаксис
     if command -v visudo >/dev/null 2>&1; then
         if ! elevate visudo -c -f "$SUDOERS_FILE" 2>/dev/null; then
             show_error "Ошибка синтаксиса! Удаляю файл..."
@@ -188,16 +248,20 @@ setup_permissions() {
 }
 
 remove_permissions() {
+    if [[ -f /etc/os-release ]] && grep -qi "^ID=nixos" /etc/os-release 2>/dev/null; then
+        echo "На NixOS удалите правила sudo вручную из /etc/nixos/configuration.nix"
+        echo "и выполните: sudo nixos-rebuild switch"
+        return 0
+    fi
+
     local removed=false
 
-    # Удаляем sudoers
     if [[ -f "$SUDOERS_FILE" ]]; then
         elevate rm -f "$SUDOERS_FILE"
         echo "Удалён $SUDOERS_FILE"
         removed=true
     fi
 
-    # Удаляем правила из doas.conf
     if [[ -f "$DOAS_CONF" ]] && grep -q "# Zapret Discord YouTube" "$DOAS_CONF"; then
         elevate sed -i '/# Zapret Discord YouTube/,/^$/d' "$DOAS_CONF"
         echo "Удалены правила из $DOAS_CONF"
