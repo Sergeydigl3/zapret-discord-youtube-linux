@@ -10,7 +10,7 @@ BASE_DIR="$(realpath "$(dirname "$0")/..")"
 
 # Ожидаемые значения для проверки
 EXPECTED_NFT_TABLE="inet zapretunix"
-EXPECTED_NFT_CHAIN="output"
+EXPECTED_NFT_CHAIN="post"
 EXPECTED_NFT_COMMENT="Added by zapret script"
 
 # Цвета для вывода
