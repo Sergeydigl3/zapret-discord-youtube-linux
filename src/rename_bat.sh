@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Перейти в корневую директорию
+cd "$(dirname "$0")/.."
+
 # Директория для обработки
 TARGET_DIR="zapret-latest"
 
