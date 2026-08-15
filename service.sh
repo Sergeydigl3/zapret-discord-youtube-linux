@@ -29,6 +29,7 @@ source "$HOME_DIR_PATH/src/cli/download.sh"
 source "$HOME_DIR_PATH/src/cli/desktop.sh"
 source "$HOME_DIR_PATH/src/cli/run.sh"
 source "$HOME_DIR_PATH/src/cli/permissions.sh"
+source "$HOME_DIR_PATH/src/cli/autocheck.sh"
 
 check_dependencies
 
@@ -67,6 +68,10 @@ case "${1:-}" in
     setup-permissions)
         shift
         handle_permissions_command "$@"
+        ;;
+    autocheck)
+        shift
+        handle_autocheck_command "$@"
         ;;
     -h|--help|help)
         show_usage

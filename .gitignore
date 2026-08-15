@@ -5,3 +5,5 @@ nfqws
 auto_tune_youtube_results.txt
 conf.env.backup
 auto_tune_results.txt
+targets.txt
+auto_check_results.txt
