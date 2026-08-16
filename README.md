@@ -368,6 +368,6 @@ dinitctl log zapret_discord_youtube
 
 <div align="center">
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Sergeydigl3/zapret-discord-youtube-linux&type=Date)](https://star-history.com/#Sergeydigl3/zapret-discord-youtube-linux&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=Sergeydigl3/zapret-discord-youtube-linux&type=Date)](https://star-history.dera.page/#Sergeydigl3/zapret-discord-youtube-linux&Date)
 
 </div>
