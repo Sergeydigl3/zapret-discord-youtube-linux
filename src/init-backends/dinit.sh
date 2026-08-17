@@ -32,11 +32,11 @@ install_service() {
 type = process
 command = /usr/bin/env bash "$absolute_service_script_path" daemon
 stop-command = /usr/bin/env bash "$absolute_service_script_path" kill
-# depends-on = network
+waits-for = network.target
 
 restart = on-failure
-restart-delay = 0.5
-restart-limit-count = 4
+restart-delay = 1
+restart-limit-count = 5
 EOF
     elevate dinitctl enable "$SERVICE_NAME"
     echo "Сервис успешно установлен и запущен."
@@ -58,7 +58,7 @@ start_service() {
     echo "Запуск сервиса..."
     elevate dinitctl start "$SERVICE_NAME"
     echo "Сервис запущен."
-    sleep 3
+    sleep 1
     check_nfqws_status
 }
 
