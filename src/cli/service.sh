@@ -67,7 +67,7 @@ show_service_menu() {
             case $choice in
             1) start_service ; read -p "Нажмите Enter для продолжения..." ;;
             2) remove_service ; read -p "Нажмите Enter для продолжения..." ;;
-            0) break ;;
+            0) return ;;
             *) show_error "Неверный выбор" ;;
             esac
             ;;
