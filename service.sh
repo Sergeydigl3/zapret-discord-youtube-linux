@@ -64,6 +64,15 @@ case "${1:-}" in
     kill)
         stop_zapret
         ;;
+    test-strategies|test)
+        shift
+        if [[ $EUID -ne 0 ]]; then
+            exec sudo "$HOME_DIR_PATH/test_strategies.sh" "$@"
+        fi
+        # shellcheck source=/dev/null
+        source "$HOME_DIR_PATH/test_strategies.sh"
+        run_test_strategies_entry "$@"
+        ;;
     setup-permissions)
         shift
         handle_permissions_command "$@"

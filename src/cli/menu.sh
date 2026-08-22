@@ -15,6 +15,7 @@ show_usage() {
     echo "    download-deps  Download/update dependencies (zapret + strategies)"
     echo "    desktop        Manage desktop shortcut"
     echo "    run            Run interactively (without installing service)"
+    echo "    test-strategies  Test strategies (connectivity checks)"
     echo "    setup-permissions  Setup NOPASSWD for nft/iptables/nfqws"
     echo
     echo "Internal commands:"
@@ -50,6 +51,7 @@ show_menu() {
     echo "5) Управление ярлыком на рабочем столе"
     echo "6) Настроить работу без пароля"
     echo "7) Сменить режим ipset [Текущий - $(get_mode_ipset)]"
+    echo "8) Тест стратегий (проверка Discord/YouTube и др.)"
     echo "0) Выход"
     echo "=============================================================================="
     echo ""
@@ -63,9 +65,25 @@ show_menu() {
     5) show_desktop_menu ;;
     6) setup_permissions || show_error "Не удалось настроить разрешения" ;;
     7) change_mode_ipset "$(get_mode_ipset)" || show_error "Не удалось сменить режим ipset" ;;
+    8) run_test_strategies_from_menu || show_error "Не удалось запустить тест стратегий" ;;
     0) exit 0 ;;
     *) show_error "Неверный выбор" ;;
     esac
+}
+
+run_test_strategies_from_menu() {
+    local test_script="$BASE_DIR/test_strategies.sh"
+    if [[ ! -f "$test_script" ]]; then
+        echo "Не найден: $test_script"
+        read -r -p "Enter..."
+        return
+    fi
+    if [[ $EUID -ne 0 ]]; then
+        exec sudo "$test_script" --interactive
+    fi
+    # shellcheck source=/dev/null
+    source "$test_script"
+    run_test_interactive_menu
 }
 
 # Запуск интерактивного меню
