@@ -12,14 +12,14 @@ show_download_deps_usage() {
     echo
     echo "Options:"
     echo "    -d, --default               Use recommended versions (non-interactive)"
-    echo "    -z, --zapret-version VER    Zapret version (e.g., v72.9)"
+    echo "    -z, --zapret-version VER    Zapret version (e.g., v72.13)"
     echo "    -s, --strat-version VER     Strategy version (commit hash or tag)"
     echo "    -h, --help                  Show this help"
     echo
     echo "Examples:"
     echo "    $(basename "$0") download-deps                    # Interactive mode"
     echo "    $(basename "$0") download-deps --default          # Use recommended versions"
-    echo "    $(basename "$0") download-deps -z v72.9 -s master   # Specific versions"
+    echo "    $(basename "$0") download-deps -z v72.13 -s 1.10.2   # Specific versions"
 }
 
 # Подменю управления зависимостями
