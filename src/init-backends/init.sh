@@ -53,7 +53,9 @@ detect_init_system() {
     fi
 
     # OPENRC
-    if [[ -d "/run/openrc" ]] || [[ -f "/sbin/rc" ]] || [[ -f "/etc/init.d/rc" ]] || type rc-status >/dev/null 2>&1; then
+    # /etc/init.d/rc сюда не входит: этот файл ставит sysv-rc в Debian/Devuan,
+    # и проверка по нему путала SysV init с OpenRC
+    if [[ -d "/run/openrc" ]] || [[ -f "/sbin/rc" ]] || type rc-status >/dev/null 2>&1; then
         echo "openrc"
         return
     fi

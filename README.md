@@ -231,7 +231,7 @@ gamefiterudp=true
 
 Скрипт:
 - Проверяет `conf.env` (если пустой — запросит параметры интерактивно)
-- Создаёт сервис для автозапуска (поддерживает systemd, OpenRC, runit, s6, dinit)
+- Создаёт сервис для автозапуска (поддерживает systemd, OpenRC, runit, s6, dinit, SysV init)
 - Использует значения из `conf.env`
 
 <details>
@@ -315,6 +315,26 @@ dinitctl status zapret_discord_youtube
 
 ```bash
 dinitctl log zapret_discord_youtube
+```
+
+</details>
+
+<details>
+<summary>Для SysV init систем</summary>
+
+Сервис добавляется в автозагрузку через `update-rc.d` (или `chkconfig`, если `update-rc.d` нет),
+лог пишется в `/var/log/zapret_discord_youtube.log` с ротацией через logrotate.
+
+Просмотреть статус сервиса можно командой:
+
+```bash
+/etc/init.d/zapret_discord_youtube status
+```
+
+Посмотреть логи сервиса:
+
+```bash
+tail -f /var/log/zapret_discord_youtube.log
 ```
 
 </details>

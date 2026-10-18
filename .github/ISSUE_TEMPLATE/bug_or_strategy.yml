@@ -45,6 +45,7 @@ body:
         - runit
         - s6
         - dinit
+        - SysV init
         - Другая / не знаю
     validations:
       required: true
