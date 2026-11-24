@@ -241,26 +241,36 @@ show_strategies() {
 
 # Валидация и нормализация названия стратегии
 # Возвращает 0 и выводит нормализованное имя, или 1 при ошибке
+# Сравнение идёт по точному совпадению строк: имена стратегий содержат скобки,
+# пробелы и точки (например "general (ALT).bat"), поэтому regex здесь не годится.
 normalize_strategy() {
     local s="$1"
+    local -a strategies=()
+    mapfile -t strategies < <(get_strategies)
 
-    # Поиск точного совпадения
-    local exact_match
-    exact_match=$(get_strategies | grep -E "^(${s}|${s}\\.bat|general_${s}|general_${s}\\.bat)$" | head -n1)
-
-    if [ -n "$exact_match" ]; then
-        echo "$exact_match"
-        return 0
-    fi
+    local candidate
+    for candidate in "$s" "${s}.bat" "general_${s}" "general_${s}.bat"; do
+        local existing
+        for existing in "${strategies[@]}"; do
+            if [[ "$existing" == "$candidate" ]]; then
+                echo "$existing"
+                return 0
+            fi
+        done
+    done
 
     # Регистронезависимый поиск
-    local case_insensitive_match
-    case_insensitive_match=$(get_strategies | grep -i -E "^(${s}|${s}\\.bat|general_${s}|general_${s}\\.bat)$" | head -n1)
-
-    if [ -n "$case_insensitive_match" ]; then
-        echo "$case_insensitive_match"
-        return 0
-    fi
+    local lower_candidate
+    for candidate in "$s" "${s}.bat" "general_${s}" "general_${s}.bat"; do
+        lower_candidate="${candidate,,}"
+        local existing
+        for existing in "${strategies[@]}"; do
+            if [[ "${existing,,}" == "$lower_candidate" ]]; then
+                echo "$existing"
+                return 0
+            fi
+        done
+    done
 
     return 1
 }
