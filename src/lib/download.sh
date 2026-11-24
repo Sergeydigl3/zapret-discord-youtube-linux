@@ -76,34 +76,97 @@ resolve_zapret_version() {
     echo "$tag"
 }
 
-# Скачивание релиза zapret
+# Скачивание релиза zapret в рабочий каталог
+# $1 - тег релиза, $2 - рабочий каталог
+# Возвращает путь к скачанному архиву
 download_zapret_release() {
     local tag="$1"
+    local work_dir="$2"
     local archive="zapret-${tag}.tar.gz"
     local url="https://github.com/${ZAPRET_REPO}/releases/download/${tag}/${archive}"
-    local tmp="/tmp/${archive}"
-    
-    elevate rm -rf "$tmp"
+    local tmp="${work_dir}/${archive}"
 
     log "Скачивание zapret: $url" >&2
     curl -fL "$url" -o "$tmp" || handle_error "Ошибка при скачивании zapret"
     echo "$tmp"
 }
 
+# Хеш файла: sha256sum из coreutils, shasum на *BSD/macOS
+_sha256_of() {
+    local file="$1"
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$file" | awk '{print $1}'
+    elif command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "$file" | awk '{print $1}'
+    else
+        return 1
+    fi
+}
+
+# Проверка бинарника по sha256sum.txt из релиза zapret
+# $1 - файл, $2 - каталог платформы, $3 - тег релиза, $4 - рабочий каталог
+# Возвращает 0, если хеш совпал (или проверить нечем), и 1 при несовпадении
+verify_nfqws_checksum() {
+    local binary="$1"
+    local platform_dir="$2"
+    local tag="$3"
+    local work_dir="$4"
+    local binary_name="nfqws"
+    local sums="${work_dir}/sha256sum.txt"
+    local sums_url="https://github.com/${ZAPRET_REPO}/releases/download/${tag}/sha256sum.txt"
+
+    local actual
+    if ! actual=$(_sha256_of "$binary"); then
+        log "ПРЕДУПРЕЖДЕНИЕ: нет sha256sum/shasum, проверка контрольной суммы пропущена" >&2
+        return 0
+    fi
+
+    if ! curl -fsSL "$sums_url" -o "$sums"; then
+        log "ПРЕДУПРЕЖДЕНИЕ: не удалось скачать sha256sum.txt для ${tag}, проверка пропущена" >&2
+        return 0
+    fi
+
+    local expected
+    expected=$(awk -v suffix="/binaries/${platform_dir}/${binary_name}" \
+        'length($2) >= length(suffix) && substr($2, length($2) - length(suffix) + 1) == suffix {print $1; exit}' \
+        "$sums")
+
+    if [[ -z "$expected" ]]; then
+        log "ПРЕДУПРЕЖДЕНИЕ: хеш для binaries/${platform_dir}/${binary_name} не найден в sha256sum.txt, проверка пропущена" >&2
+        return 0
+    fi
+
+    if [[ "$actual" != "$expected" ]]; then
+        log "Ошибка: sha256 ${binary_name} ($actual) не совпадает с релизом ($expected)" >&2
+        return 1
+    fi
+
+    log "Контрольная сумма ${binary_name} совпадает с sha256sum.txt релиза ${tag}" >&2
+    return 0
+}
+
 # Извлечение бинарника nfqws из архива
+# $1 - архив, $2 - каталог платформы, $3 - каталог установки, $4 - рабочий каталог
 extract_nfqws_binary() {
     local archive="$1"
     local platform_dir="$2"
     local out_dir="$3"
+    local work_dir="${4:-}"
     local binary_name="nfqws"
-    local tmpdir
-    tmpdir=$(mktemp -d)
+    local extract_dir
+
+    if [[ -n "$work_dir" ]]; then
+        extract_dir="${work_dir}/extract"
+    else
+        extract_dir=$(mktemp -d)
+    fi
+    mkdir -p "$extract_dir"
 
     log "Извлечение архива zapret..." >&2
-    tar -xzf "$archive" -C "$tmpdir" || handle_error "Ошибка при извлечении архива"
+    tar -xzf "$archive" -C "$extract_dir" || handle_error "Ошибка при извлечении архива"
 
     local bin_path
-    bin_path=$(find "$tmpdir" -type f -path "*binaries/${platform_dir}/${binary_name}" | head -n1 || true)
+    bin_path=$(find "$extract_dir" -type f -path "*binaries/${platform_dir}/${binary_name}" | head -n1 || true)
 
     [[ -z "$bin_path" ]] && handle_error "Бинарник ${binary_name} не найден для платформы ${platform_dir}"
 
@@ -111,7 +174,6 @@ extract_nfqws_binary() {
     chmod +x "${out_dir}/${binary_name}"
 
     log "Бинарник сохранён: ${out_dir}/${binary_name}" >&2
-    rm -rf "$tmpdir" "$archive"
 }
 
 # Главная функция скачивания nfqws
@@ -119,20 +181,30 @@ extract_nfqws_binary() {
 download_nfqws() {
     local version="${1:-latest}"
     local out_dir="${BASE_DIR:-$(dirname "$NFQWS_PATH")}"
-    
+    local platform tag work_dir archive
 
     log "Скачивание nfqws (версия: $version)..." >&2
 
-    local platform tag archive
-
-    platform=$(detect_platform_dir)
+    platform=$(detect_platform_dir) || handle_error "Не удалось определить платформу"
     log "Определена платформа: $platform" >&2
 
-    tag=$(resolve_zapret_version "$version")
+    tag=$(resolve_zapret_version "$version") || handle_error "Не удалось определить версию релиза zapret"
     log "Используется версия релиза: $tag" >&2
 
-    archive=$(download_zapret_release "$tag")
-    extract_nfqws_binary "$archive" "$platform" "$out_dir"
+    work_dir=$(mktemp -d "${TMPDIR:-/tmp}/zapret-install.XXXXXX") || \
+        handle_error "Не удалось создать временный каталог"
+
+    archive=$(download_zapret_release "$tag" "$work_dir") || \
+        handle_error "Ошибка при скачивании zapret ${tag}"
+    extract_nfqws_binary "$archive" "$platform" "$out_dir" "$work_dir"
+
+    if ! verify_nfqws_checksum "${out_dir}/nfqws" "$platform" "$tag" "$work_dir"; then
+        rm -f "${out_dir}/nfqws"
+        rm -rf "$work_dir"
+        handle_error "Контрольная сумма nfqws не совпала с sha256sum.txt релиза ${tag}. Установка прервана."
+    fi
+
+    rm -rf "$work_dir"
 
     # Проверяем что файл создан
     if [[ ! -f "$out_dir/nfqws" ]]; then
