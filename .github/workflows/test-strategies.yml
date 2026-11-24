@@ -6,6 +6,18 @@ on:
 
 jobs:
   #######################################################################
+  # Unit tests (no root, no network)
+  #######################################################################
+  test-units:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run unit tests
+        run: ./ci/test_units.sh
+
+  #######################################################################
   # Strategy tests (native Ubuntu)
   #######################################################################
   test-strategies:

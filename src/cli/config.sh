@@ -72,11 +72,15 @@ create_conf_file() {
     fi
 
     # Записываем полученные значения в conf.env
+    # Значение стратегии экранируем: имена могут содержать пробелы и скобки,
+    # а conf.env подключается через source
+    local strategy_value
+    printf -v strategy_value '%q' "$strategy_choice"
     cat <<EOF >"$CONF_FILE"
 interface=$chosen_interface
 gamefiltertcp=$gamefilter_choice_tcp
 gamefilterudp=$gamefilter_choice_udp
-strategy=$strategy_choice
+strategy=$strategy_value
 firewall_backend=$fw_backend
 EOF
 
@@ -129,7 +133,7 @@ update_config() {
     fi
 
     if [[ "$interface" != "any" ]]; then
-        interface_match=$(ls /sys/class/net | grep -E "^${interface}$")
+        interface_match=$(ls /sys/class/net | grep -Fx -- "$interface")
         if [ ! -n "$interface_match" ]; then
             echo "Несуществующий интерфейс!"
             local interfaces=("any" $(ls /sys/class/net))
@@ -138,11 +142,16 @@ update_config() {
         fi
     fi
 
+    # Экранируем имя стратегии: в нём могут быть пробелы и скобки,
+    # а conf.env подключается через source
+    local strategy_value
+    printf -v strategy_value '%q' "$normalized_strategy"
+
     cat > "$CONF_FILE" << ENV
 interface=${interface}
 gamefiltertcp=${gamefiltertcp}
 gamefilterudp=${gamefilterudp}
-strategy=${normalized_strategy}
+strategy=${strategy_value}
 firewall_backend=${firewall_backend}
 ENV
 
